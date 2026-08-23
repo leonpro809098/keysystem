@@ -23,7 +23,7 @@ local Config = {
     Secret          = "Leonpro809098", -- This makes the script ONLY run from the key script. Even if they copy the original obfuscated script to bypass the key, they won't be able to!
     
     -- [3] Scripts & Links
-    MainScriptURL   = "https://raw.githubusercontent.com/OYB0/OYB0/refs/heads/main/Roblox/Executor/KeySystem/SecretCode.lua", -- The raw URL of your main script
+    MainScriptURL   = "https://gist.githubusercontent.com/leonpro809098/b05f09ff04ef901ebf63b167b71f63db/raw/fa51c6bf328c6594092556fcdd20d5f7e2d3b54d/esp_aimbot.lua", -- The raw URL of your main script
     
     -- [4] Social Media Settings (Set to true to show, false to hide)
     ShowDiscord     = false,
