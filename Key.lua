@@ -32,8 +32,8 @@ local Config = {
     ShowInstagram   = false,
     InstagramURL    = "https://www.instagram.com/oyb0i/",
     
-    ShowYoutube     = false,
-    YoutubeURL      = "https://www.youtube.com/channel/UCAlXXV1Hbvf7WbfXARuVtiQ",
+    ShowYoutube     = true,
+    YoutubeURL      = "https://www.youtube.com/channel/UCsi9RO1o6cH8Km6BV9ddvjg",
 
     -- [5] File System
     KeyFileName     = "Mykey.txt", -- The name of the file where the valid key will be saved for auto-login
