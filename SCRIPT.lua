@@ -24,14 +24,14 @@ local ProtectionConfig = {
     SecretKey = "Test",
     
     -- The name of your Hub (shown in the kick message if they try to bypass)
-    HubName = "SovichHub"
+    HubName = "Sovich HUB"
 }
 
 -- Anti-Bypass Logic: Checks if the Key System successfully set the global variable
 if not _G[ProtectionConfig.SecretKey] then
     local player = game:GetService("Players").LocalPlayer
     if player then
-        player:Kick("\n🛡️ Unauthorized Execution 🛡️\n\nPlease use the official Key System to run " .. ProtectionConfig.SovichHub)
+        player:Kick("\n🛡️ Unauthorized Execution 🛡️\n\nPlease use the official Key System to run " .. ProtectionConfig.HubName)
     end
     return -- Stops the rest of the script from loading!
 end
@@ -40,11 +40,10 @@ end
 -- 👇 YOUR MAIN SCRIPT CODE STARTS HERE 👇
 -------------------------------------------------------------------------------
 
-print(ProtectionConfig.HubName .. " Loaded Successfully!")
-
+print(ProtectionConfig.HubName .. " Loaded Successfully!") 
 
 --[[
-    SOVICH HUB - TWD3 PRO (UNIVERSAL 2D DRAWING ESP + SEARCH TELEPORT + SPINBOT)
+    SOVICH - TWD3 PRO (UNIVERSAL 2D DRAWING ESP + SEARCH TELEPORT + SPINBOT)
     v3.5 Update: Head Hitbox Fix
 ]]--
 
