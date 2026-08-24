@@ -42,10 +42,9 @@ end
 
 print(ProtectionConfig.HubName .. " Loaded Successfully!")
 
-
 --[[
     SOVICH - TWD3 PRO (DRAWING TRACERS + METROS ESP + SEARCH TELEPORT)
-    v3.1 Update: Fixed Default WalkSpeed & JumpPower Retention
+    v3.2 Update: Universal Movement Engine Fix (Supports CFrame / JumpHeight / WalkSpeed)
 ]]--
 
 local Players = game:GetService("Players")
@@ -54,9 +53,9 @@ local UserInputService = game:GetService("UserInputService")
 local localPlayer = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
--- Variables para guardar los valores por defecto del juego
 local defaultWalkSpeed = 16
 local defaultJumpPower = 50
+local defaultJumpHeight = 7.2
 
 local settings = {
 	aimEnabled = false,
@@ -84,16 +83,15 @@ local settings = {
 	tpSearchText = ""
 }
 
--- Función para guardar los valores reales del personaje al aparecer
 local function setupCharacter(char)
 	local humanoid = char:WaitForChild("Humanoid", 5)
 	if humanoid then
-		-- Si las funciones están apagadas, guardamos la velocidad real del juego
 		if not settings.speedEnabled then
 			defaultWalkSpeed = humanoid.WalkSpeed
 		end
 		if not settings.jumpEnabled then
 			defaultJumpPower = humanoid.JumpPower
+			defaultJumpHeight = humanoid.JumpHeight
 		end
 	end
 end
@@ -193,7 +191,7 @@ titleText.BackgroundTransparency = 1
 titleText.TextColor3 = Color3.fromRGB(210, 160, 255)
 titleText.TextSize = 13
 titleText.Font = Enum.Font.GothamBold
-titleText.Text = "SOVICH HUB  |  v3.1 Pro"
+titleText.Text = "SOVICH HUB  |  v3.2 Pro"
 titleText.TextXAlignment = Enum.TextXAlignment.Left
 titleText.Parent = topBar
 
@@ -257,7 +255,6 @@ local tabCombat = createTabContent("Combate")
 local tabMovement = createTabContent("Movimiento")
 local tabVisuals = createTabContent("Visuales")
 
--- Pestaña especial Teleport con barra fija de búsqueda
 local tabTeleport = Instance.new("Frame")
 tabTeleport.Name = "TeleportContent"
 tabTeleport.Size = UDim2.new(1, 0, 1, 0)
@@ -425,7 +422,6 @@ createButtonIn(tabMain, 1, "SpeedHack: OFF", function(btn)
 	btn.Text = settings.speedEnabled and "SpeedHack: ON" or "SpeedHack: OFF"
 	btn.BackgroundColor3 = settings.speedEnabled and Color3.fromRGB(60, 0, 110) or Color3.fromRGB(25, 20, 40)
 	
-	-- Si se apaga, devolvemos la velocidad original del juego
 	if not settings.speedEnabled and localPlayer.Character then
 		local hum = localPlayer.Character:FindFirstChildOfClass("Humanoid")
 		if hum then hum.WalkSpeed = defaultWalkSpeed end
@@ -438,10 +434,12 @@ createButtonIn(tabMain, 3, "Super Jump: OFF", function(btn)
 	btn.Text = settings.jumpEnabled and "Super Jump: ON" or "Super Jump: OFF"
 	btn.BackgroundColor3 = settings.jumpEnabled and Color3.fromRGB(60, 0, 110) or Color3.fromRGB(25, 20, 40)
 	
-	-- Si se apaga, devolvemos la fuerza de salto original
 	if not settings.jumpEnabled and localPlayer.Character then
 		local hum = localPlayer.Character:FindFirstChildOfClass("Humanoid")
-		if hum then hum.JumpPower = defaultJumpPower end
+		if hum then 
+			hum.JumpPower = defaultJumpPower 
+			hum.JumpHeight = defaultJumpHeight
+		end
 	end
 end)
 createSliderIn(tabMain, 4, settings.customJump, 50, 350, "Altura Salto", function(val) settings.customJump = val end)
@@ -563,7 +561,7 @@ local function getESP(player)
 		healthLabel.Parent = container
 
 		local distLabel = Instance.new("TextLabel")
-		distLabel.Size = UDim2.new(1, 0, 0, 18)
+		distLabel.Size = UDim2.new(1, 0, 0, 36)
 		distLabel.Position = UDim2.new(0, 0, 0, 36)
 		distLabel.BackgroundTransparency = 1
 		distLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
@@ -680,7 +678,7 @@ UserInputService.InputEnded:Connect(function(input)
 end)
 
 --// BUCLE PRINCIPAL
-RunService.RenderStepped:Connect(function()
+RunService.RenderStepped:Connect(function(delta)
 	if not camera or not localPlayer.Character then return end
 	
 	local mousePos = UserInputService:GetMouseLocation()
@@ -791,18 +789,28 @@ RunService.RenderStepped:Connect(function()
 		end
 	end
 
-	-- Speed / Jump / Bhop (CORREGIDO)
+	-- Speed / Jump / Bhop (MECANISMO UNIVERSAL)
 	local humanoid = localPlayer.Character:FindFirstChildOfClass("Humanoid")
-	if humanoid then
+	if humanoid and myRoot then
+		-- SPEED
 		if settings.speedEnabled then
 			humanoid.WalkSpeed = settings.customSpeed
+			
+			-- Forzado por CFrame si el juego bloquea WalkSpeed
+			if humanoid.MoveDirection.Magnitude > 0 then
+				local moveDir = humanoid.MoveDirection
+				myRoot.CFrame = myRoot.CFrame + (moveDir * (settings.customSpeed / 10) * delta * 10)
+			end
 		end
 		
+		-- JUMP
 		if settings.jumpEnabled then
-			humanoid.JumpPower = settings.customJump
 			humanoid.UseJumpPower = true
+			humanoid.JumpPower = settings.customJump
+			humanoid.JumpHeight = (settings.customJump / 5)
 		end
 		
+		-- BHOP
 		if settings.bhopEnabled and UserInputService:IsKeyDown(Enum.KeyCode.Space) then
 			if humanoid.FloorMaterial ~= Enum.Material.Air then humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end
 		end
