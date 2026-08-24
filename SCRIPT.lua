@@ -19,8 +19,8 @@
 
 local ProtectionConfig = {
     -- 🔴 CRITICAL: This MUST exactly match the 'Secret' value in your Key System's Config!
-    -- If your Key System has: Secret = "Test"
-    -- Then this must also be: SecretKey = "Test"
+    -- If your Key System has: Secret = "Leonpro809098"
+    -- Then this must also be: SecretKey = "Leonpro809098"
     SecretKey = "Leonpro809098",
     
     -- The name of your Hub (shown in the kick message if they try to bypass)
@@ -44,7 +44,7 @@ print(ProtectionConfig.HubName .. " Loaded Successfully!")
 
 --[[
     SOVICH - TWD3 PRO HUB
-    v4.0 Update: Silent Aim + Chams (Team Check) + Anti-AFK
+    v4.1 Fixed: Silent Aim, Chams y Anti-AFK totalmente integrados en la GUI
 ]]--
 
 local Players = game:GetService("Players")
@@ -94,7 +94,7 @@ local settings = {
 	tpSearchText = ""
 }
 
---// ANTI-AFK ENGINE
+--// 1. SISTEMA ANTI-AFK
 localPlayer.Idled:Connect(function()
 	if settings.antiAfkEnabled then
 		VirtualUser:CaptureController()
@@ -116,14 +116,14 @@ end
 if localPlayer.Character then setupCharacter(localPlayer.Character) end
 localPlayer.CharacterAdded:Connect(setupCharacter)
 
---// GUI Principal
+--// INTERFAZ DE USUARIO (GUI)
 local gui = Instance.new("ScreenGui")
 gui.Name = "SovichHub_" .. math.random(11111, 99999)
 gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
 gui.Parent = localPlayer:WaitForChild("PlayerGui")
 
---// Círculo FOV
+-- Círculo FOV
 local fovFrame = Instance.new("Frame")
 fovFrame.Size = UDim2.new(0, settings.fovRadius * 2, 0, settings.fovRadius * 2)
 fovFrame.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -139,7 +139,7 @@ local fovCorner = Instance.new("UICorner")
 fovCorner.CornerRadius = UDim.new(1, 0)
 fovCorner.Parent = fovFrame
 
---// BOTÓN FLOTANTE
+-- Botón Flotante para Ocultar/Mostrar
 local toggleButton = Instance.new("TextButton")
 toggleButton.Size = UDim2.new(0, 45, 0, 45)
 toggleButton.Position = UDim2.new(0, 25, 0, 150)
@@ -174,7 +174,7 @@ UserInputService.InputEnded:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then draggingBtn = false end
 end)
 
---// VENTANA PRINCIPAL
+-- Ventana Principal
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0, 520, 0, 360)
 mainFrame.Position = UDim2.new(0.5, -260, 0.5, -180)
@@ -206,7 +206,7 @@ titleText.BackgroundTransparency = 1
 titleText.TextColor3 = Color3.fromRGB(210, 160, 255)
 titleText.TextSize = 13
 titleText.Font = Enum.Font.GothamBold
-titleText.Text = "SOVICH HUB  |  v4.0 Universal"
+titleText.Text = "SOVICH HUB  |  v4.1 Universal"
 titleText.TextXAlignment = Enum.TextXAlignment.Left
 titleText.Parent = topBar
 
@@ -253,7 +253,7 @@ local function createTabContent(name)
 	scroll.Name = name .. "Content"
 	scroll.Size = UDim2.new(1, 0, 1, 0)
 	scroll.BackgroundTransparency = 1
-	scroll.CanvasSize = UDim2.new(0, 0, 0, 650)
+	scroll.CanvasSize = UDim2.new(0, 0, 0, 800)
 	scroll.ScrollBarThickness = 4
 	scroll.ScrollBarImageColor3 = Color3.fromRGB(150, 0, 220)
 	scroll.Visible = false
@@ -429,7 +429,7 @@ local function createSliderIn(parentScroll, order, defaultVal, minVal, maxVal, t
 	return container
 end
 
--- CONTROLES CONTENIDOS
+-- PESTAÑA PRINCIPAL
 createButtonIn(tabMain, 1, "SpeedHack: OFF", function(btn)
 	settings.speedEnabled = not settings.speedEnabled
 	btn.Text = settings.speedEnabled and "SpeedHack: ON" or "SpeedHack: OFF"
@@ -462,20 +462,23 @@ createButtonIn(tabMain, 6, "Reconectar Servidor", function()
 	TeleportService:Teleport(game.PlaceId, localPlayer)
 end)
 
-createButtonIn(tabCombat, 1, "Aimbot / AimAssist: OFF", function(btn)
+-- PESTAÑA COMBATE (AQUÍ ESTÁ EL BOTÓN SILENT AIM)
+createButtonIn(tabCombat, 1, "Aimbot Normal: OFF", function(btn)
 	settings.aimEnabled = not settings.aimEnabled
-	btn.Text = settings.aimEnabled and "Aimbot / AimAssist: ON" or "Aimbot / AimAssist: OFF"
+	btn.Text = settings.aimEnabled and "Aimbot Normal: ON" or "Aimbot Normal: OFF"
 	btn.BackgroundColor3 = settings.aimEnabled and Color3.fromRGB(60, 0, 110) or Color3.fromRGB(25, 20, 40)
 end)
+
 createButtonIn(tabCombat, 2, "Silent Aim: OFF", function(btn)
 	settings.silentAimEnabled = not settings.silentAimEnabled
 	btn.Text = settings.silentAimEnabled and "Silent Aim: ON" or "Silent Aim: OFF"
 	btn.BackgroundColor3 = settings.silentAimEnabled and Color3.fromRGB(60, 0, 110) or Color3.fromRGB(25, 20, 40)
 end)
+
 createSliderIn(tabCombat, 3, settings.fovRadius, 50, 300, "Tamaño FOV", function(val)
 	settings.fovRadius = val; fovFrame.Size = UDim2.new(0, val * 2, 0, val * 2)
 end)
-createSliderIn(tabCombat, 4, settings.aimSmoothness, 1, 10, "AimAssist Suavizado", function(val) settings.aimSmoothness = val end)
+createSliderIn(tabCombat, 4, settings.aimSmoothness, 1, 10, "Aimbot Suavizado", function(val) settings.aimSmoothness = val end)
 
 createButtonIn(tabCombat, 5, "Head Hitbox Extender: OFF", function(btn)
 	settings.hitboxEnabled = not settings.hitboxEnabled
@@ -494,6 +497,7 @@ createButtonIn(tabCombat, 7, "Spinbot: OFF", function(btn)
 end)
 createSliderIn(tabCombat, 8, settings.spinbotSpeed, 5, 100, "Velocidad Spinbot", function(val) settings.spinbotSpeed = val end)
 
+-- PESTAÑA MOVIMIENTO
 createButtonIn(tabMovement, 1, "Fly (Volar): OFF", function(btn)
 	settings.flyEnabled = not settings.flyEnabled
 	btn.Text = settings.flyEnabled and "Fly (Volar): ON" or "Fly (Volar): OFF"
@@ -513,23 +517,25 @@ createButtonIn(tabMovement, 4, "BunnyHop (Bhop): OFF", function(btn)
 	btn.BackgroundColor3 = settings.bhopEnabled and Color3.fromRGB(60, 0, 110) or Color3.fromRGB(25, 20, 40)
 end)
 
+-- PESTAÑA VISUALES (AQUÍ ESTÁN LOS BOTONES DE CHAMS)
 createButtonIn(tabVisuals, 1, "ESP Master: OFF", function(btn)
 	settings.espEnabled = not settings.espEnabled
 	btn.Text = settings.espEnabled and "ESP Master: ON" or "ESP Master: OFF"
 	btn.BackgroundColor3 = settings.espEnabled and Color3.fromRGB(60, 0, 110) or Color3.fromRGB(25, 20, 40)
 end)
-createButtonIn(tabVisuals, 2, "Chams (Wallhack 3D): OFF", function(btn)
+createButtonIn(tabVisuals, 2, "Chams 3D (Brillo Paredes): OFF", function(btn)
 	settings.chamsEnabled = not settings.chamsEnabled
-	btn.Text = settings.chamsEnabled and "Chams (Wallhack 3D): ON" or "Chams (Wallhack 3D): OFF"
+	btn.Text = settings.chamsEnabled and "Chams 3D: ON" or "Chams 3D: OFF"
 	btn.BackgroundColor3 = settings.chamsEnabled and Color3.fromRGB(60, 0, 110) or Color3.fromRGB(25, 20, 40)
 end)
-createButtonIn(tabVisuals, 3, "Team Check (Colores Equipo): ON", function(btn)
+createButtonIn(tabVisuals, 3, "Team Check (Colores): ON", function(btn)
 	settings.teamCheck = not settings.teamCheck
-	btn.Text = settings.teamCheck and "Team Check (Colores Equipo): ON" or "Team Check (Colores Equipo): OFF"
+	btn.Text = settings.teamCheck and "Team Check: ON" or "Team Check: OFF"
+	btn.BackgroundColor3 = settings.teamCheck and Color3.fromRGB(60, 0, 110) or Color3.fromRGB(25, 20, 40)
 end)
 createButtonIn(tabVisuals, 4, "Cajas 2D (Boxes): ON", function(btn)
 	settings.espBoxesEnabled = not settings.espBoxesEnabled
-	btn.Text = settings.espBoxesEnabled and "Cajas 2D (Boxes): ON" or "Cajas 2D (Boxes): OFF"
+	btn.Text = settings.espBoxesEnabled and "Cajas 2D: ON" or "Cajas 2D: OFF"
 end)
 createButtonIn(tabVisuals, 5, "Mostrar Nombres: ON", function(btn)
 	settings.espNamesEnabled = not settings.espNamesEnabled
@@ -537,18 +543,18 @@ createButtonIn(tabVisuals, 5, "Mostrar Nombres: ON", function(btn)
 end)
 createButtonIn(tabVisuals, 6, "Mostrar Vida (♥ %): ON", function(btn)
 	settings.espHealthEnabled = not settings.espHealthEnabled
-	btn.Text = settings.espHealthEnabled and "Mostrar Vida (♥ %): ON" or "Mostrar Vida (♥ %): OFF"
+	btn.Text = settings.espHealthEnabled and "Mostrar Vida: ON" or "Mostrar Vida: OFF"
 end)
 createButtonIn(tabVisuals, 7, "Mostrar Distancia (m): ON", function(btn)
 	settings.espDistanceEnabled = not settings.espDistanceEnabled
-	btn.Text = settings.espDistanceEnabled and "Mostrar Distancia (m): ON" or "Mostrar Distancia (m): OFF"
+	btn.Text = settings.espDistanceEnabled and "Mostrar Distancia: ON" or "Mostrar Distancia: OFF"
 end)
 createButtonIn(tabVisuals, 8, "Líneas (Tracers): ON", function(btn)
 	settings.espTracersEnabled = not settings.espTracersEnabled
 	btn.Text = settings.espTracersEnabled and "Líneas (Tracers): ON" or "Líneas (Tracers): OFF"
 end)
 
---// ESP ENGINE UNIVERSAL (DRAWING API 2D)
+--// ESP ENGINE UNIVERSAL (DRAWING API)
 local esp2D = {}
 
 local function createESP2D(player)
@@ -614,11 +620,11 @@ local function isEnemy(player)
 	return true
 end
 
---// CHAMS ENGINE
+--// MOTOR DE CHAMS 3D
 local function applyChams(player)
 	if not player.Character then return end
 	local highlight = player.Character:FindFirstChild("SovichChams")
-	if settings.chamsEnabled and isEnemy(player) then
+	if settings.chamsEnabled then
 		if not highlight then
 			highlight = Instance.new("Highlight")
 			highlight.Name = "SovichChams"
@@ -627,7 +633,7 @@ local function applyChams(player)
 		local color = isEnemy(player) and settings.enemyColor or settings.allyColor
 		highlight.FillColor = color
 		highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-		highlight.FillTransparency = 0.5
+		highlight.FillTransparency = 0.4
 		highlight.OutlineTransparency = 0
 		highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
 		highlight.Enabled = true
@@ -636,7 +642,7 @@ local function applyChams(player)
 	end
 end
 
---// LISTA TELEPORT CON BÚSQUEDA
+--// LISTA TELEPORT
 local function updateTeleportList()
 	tpScroll:ClearAllChildren()
 	local listLayout = Instance.new("UIListLayout")
@@ -676,7 +682,7 @@ Players.PlayerAdded:Connect(updateTeleportList)
 Players.PlayerRemoving:Connect(updateTeleportList)
 updateTeleportList()
 
--- BÚSQUEDA DE ENEMIGO MÁS CERCANO
+-- LÓGICA AIMBOT / SILENT AIM
 local function getClosestPlayer()
 	local closestPlayer = nil
 	local shortestDistance = settings.fovRadius
@@ -702,13 +708,18 @@ local function getClosestPlayer()
 end
 
 UserInputService.InputBegan:Connect(function(input)
-	if input.UserInputType == settings.aimKey and (settings.aimEnabled or settings.silentAimEnabled) then settings.aimbotTargeting = true end
-end)
-UserInputService.InputEnded:Connect(function(input)
-	if input.UserInputType == settings.aimKey then settings.aimbotTargeting = false end
+	if input.UserInputType == settings.aimKey and (settings.aimEnabled or settings.silentAimEnabled) then 
+		settings.aimbotTargeting = true 
+	end
 end)
 
--- HOOK PARA SILENT AIM
+UserInputService.InputEnded:Connect(function(input)
+	if input.UserInputType == settings.aimKey then 
+		settings.aimbotTargeting = false 
+	end
+end)
+
+-- HOOK METAMETHOD PARA SILENT AIM
 local oldIndex
 oldIndex = hookmetamethod(game, "__index", function(self, key)
 	if not checkcaller() and settings.silentAimEnabled and settings.aimbotTargeting and key == "CFrame" and self == camera then
@@ -720,7 +731,7 @@ oldIndex = hookmetamethod(game, "__index", function(self, key)
 	return oldIndex(self, key)
 end)
 
---// BUCLE PRINCIPAL
+-- BUCLE PRINCIPAL (RENDERSTEPPED)
 RunService.RenderStepped:Connect(function(delta)
 	if not camera or not localPlayer.Character then return end
 	
@@ -728,7 +739,7 @@ RunService.RenderStepped:Connect(function(delta)
 	fovFrame.Position = UDim2.new(0, mousePos.X, 0, mousePos.Y)
 	fovFrame.Visible = settings.aimEnabled or settings.silentAimEnabled
 
-	-- AIMASSIST SUAVE DE CÁMARA
+	-- Aimbot Normal
 	if settings.aimbotTargeting and settings.aimEnabled and not settings.silentAimEnabled then
 		local target = getClosestPlayer()
 		if target then
@@ -738,7 +749,7 @@ RunService.RenderStepped:Connect(function(delta)
 		end
 	end
 
-	-- SPINBOT
+	-- Spinbot
 	if settings.spinbotEnabled then
 		local myRoot = getRootPart(localPlayer.Character)
 		local hum = localPlayer.Character:FindFirstChildOfClass("Humanoid")
@@ -748,13 +759,13 @@ RunService.RenderStepped:Connect(function(delta)
 		end
 	end
 
-	-- CHAMS & ESP 2D
-	local myRoot = getRootPart(localPlayer.Character)
-
+	-- Aplicar Chams a los jugadores
 	for _, player in ipairs(Players:GetPlayers()) do
 		if player ~= localPlayer then applyChams(player) end
 	end
 
+	-- Renderear ESP 2D
+	local myRoot = getRootPart(localPlayer.Character)
 	for player, draw in pairs(esp2D) do
 		local char = player.Character
 		local root = getRootPart(char)
@@ -770,26 +781,19 @@ RunService.RenderStepped:Connect(function(delta)
 				local width = height / 1.8
 				local drawColor = isEnemy(player) and settings.enemyColor or settings.allyColor
 
-				-- CAJA
 				if settings.espBoxesEnabled then
 					draw.box.Size = Vector2.new(width, height)
 					draw.box.Position = Vector2.new(pos.X - width / 2, pos.Y - height / 2)
 					draw.box.Color = drawColor
 					draw.box.Visible = true
-				else
-					draw.box.Visible = false
-				end
+				else draw.box.Visible = false end
 
-				-- NOMBRE
 				if settings.espNamesEnabled then
 					draw.name.Text = player.DisplayName or player.Name
 					draw.name.Position = Vector2.new(pos.X, (pos.Y - height / 2) - 16)
 					draw.name.Visible = true
-				else
-					draw.name.Visible = false
-				end
+				else draw.name.Visible = false end
 
-				-- INFORMACIÓN
 				local infoText = ""
 				if settings.espHealthEnabled and hum then
 					local hp = math.clamp(math.floor((hum.Health / hum.MaxHealth) * 100), 0, 100)
@@ -804,19 +808,14 @@ RunService.RenderStepped:Connect(function(delta)
 					draw.info.Text = infoText
 					draw.info.Position = Vector2.new(pos.X, (pos.Y + height / 2) + 2)
 					draw.info.Visible = true
-				else
-					draw.info.Visible = false
-				end
+				else draw.info.Visible = false end
 
-				-- TRACERS
 				if settings.espTracersEnabled then
 					draw.line.From = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
 					draw.line.To = Vector2.new(pos.X, pos.Y)
 					draw.line.Color = drawColor
 					draw.line.Visible = true
-				else
-					draw.line.Visible = false
-				end
+				else draw.line.Visible = false end
 			else
 				draw.box.Visible = false; draw.name.Visible = false; draw.info.Visible = false; draw.line.Visible = false
 			end
@@ -832,7 +831,7 @@ RunService.RenderStepped:Connect(function(delta)
 		end
 	end
 
-	-- HEAD HITBOX EXTENDER
+	-- Head Hitbox Extender
 	if settings.hitboxEnabled then
 		for _, player in ipairs(Players:GetPlayers()) do
 			if player ~= localPlayer and player.Character and isEnemy(player) then
@@ -890,5 +889,4 @@ RunService.Heartbeat:Connect(function()
 		local hum = localPlayer.Character:FindFirstChildOfClass("Humanoid")
 		if hum then hum.PlatformStand = false end
 	end
-end)
 end)
