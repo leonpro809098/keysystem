@@ -44,7 +44,7 @@ print(ProtectionConfig.HubName .. " Loaded Successfully!")
 
 --[[
     SOVICH - TWD3 PRO (UNIVERSAL 2D DRAWING ESP + SEARCH TELEPORT + SPINBOT)
-    v3.4 Update: Universal Drawing 2D ESP (Compatible con Bloxstrike, Phantom Forces, etc.)
+    v3.5 Update: Head Hitbox Fix
 ]]--
 
 local Players = game:GetService("Players")
@@ -190,7 +190,7 @@ titleText.BackgroundTransparency = 1
 titleText.TextColor3 = Color3.fromRGB(210, 160, 255)
 titleText.TextSize = 13
 titleText.Font = Enum.Font.GothamBold
-titleText.Text = "SOVICH HUB  |  v3.4 Universal"
+titleText.Text = "SOVICH HUB  |  v3.5 Universal"
 titleText.TextXAlignment = Enum.TextXAlignment.Left
 titleText.Parent = topBar
 
@@ -445,12 +445,13 @@ createSliderIn(tabCombat, 2, settings.fovRadius, 50, 300, "Tamaño FOV", functio
 	settings.fovRadius = val; fovFrame.Size = UDim2.new(0, val * 2, 0, val * 2)
 end)
 createSliderIn(tabCombat, 3, settings.aimSmoothness, 1, 10, "AimAssist Suavizado (1=Fuerte, 10=Súper Suave)", function(val) settings.aimSmoothness = val end)
-createButtonIn(tabCombat, 4, "Hitbox Extender: OFF", function(btn)
+
+createButtonIn(tabCombat, 4, "Head Hitbox Extender: OFF", function(btn)
 	settings.hitboxEnabled = not settings.hitboxEnabled
-	btn.Text = settings.hitboxEnabled and "Hitbox Extender: ON" or "Hitbox Extender: OFF"
+	btn.Text = settings.hitboxEnabled and "Head Hitbox Extender: ON" or "Head Hitbox Extender: OFF"
 	btn.BackgroundColor3 = settings.hitboxEnabled and Color3.fromRGB(60, 0, 110) or Color3.fromRGB(25, 20, 40)
 end)
-createSliderIn(tabCombat, 5, settings.hitboxSize, 2, 20, "Tamaño Hitbox", function(val) settings.hitboxSize = val end)
+createSliderIn(tabCombat, 5, settings.hitboxSize, 2, 20, "Tamaño Hitbox Cabeza", function(val) settings.hitboxSize = val end)
 
 createButtonIn(tabCombat, 6, "Spinbot: OFF", function(btn)
 	settings.spinbotEnabled = not settings.spinbotEnabled
@@ -555,13 +556,21 @@ for _, p in ipairs(Players:GetPlayers()) do if p ~= localPlayer then createESP2D
 Players.PlayerAdded:Connect(function(p) if p ~= localPlayer then createESP2D(p) end end)
 Players.PlayerRemoving:Connect(removeESP2D)
 
--- MOTOR PARA ENCONTRAR PARTE PRINCIPAL (Compatible con Bloxstrike)
+-- BÚSQUEDA ESPECÍFICA DE LA CABEZA
+local function getHeadPart(char)
+	if not char then return nil end
+	return char:FindFirstChild("Head") 
+		or char:FindFirstChild("FakeHead") 
+		or char:FindFirstChild("head")
+end
+
+-- BÚSQUEDA GENERAL DE RAÍZ (Para TP / Movimiento)
 local function getRootPart(char)
 	if not char then return nil end
 	return char:FindFirstChild("HumanoidRootPart") 
 		or char:FindFirstChild("UpperTorso") 
 		or char:FindFirstChild("Torso") 
-		or char:FindFirstChild("Head") 
+		or getHeadPart(char)
 		or char:FindFirstChildOfClass("BasePart")
 end
 
@@ -607,7 +616,7 @@ Players.PlayerAdded:Connect(updateTeleportList)
 Players.PlayerRemoving:Connect(updateTeleportList)
 updateTeleportList()
 
---// BÚSQUEDA DE JUGADOR CERCANO
+--// BÚSQUEDA DE JUGADOR CERCANO (Orientado a la Cabeza)
 local function getClosestPlayer()
 	local closestPlayer = nil
 	local shortestDistance = settings.fovRadius
@@ -615,15 +624,15 @@ local function getClosestPlayer()
 
 	for _, player in pairs(Players:GetPlayers()) do
 		if player ~= localPlayer and player.Character then
-			local root = getRootPart(player.Character)
+			local head = getHeadPart(player.Character) or getRootPart(player.Character)
 			local hum = player.Character:FindFirstChildOfClass("Humanoid")
-			if root and (not hum or hum.Health > 0) then
-				local pos, onScreen = camera:WorldToViewportPoint(root.Position)
+			if head and (not hum or hum.Health > 0) then
+				local pos, onScreen = camera:WorldToViewportPoint(head.Position)
 				if onScreen then
 					local distance = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
 					if distance < shortestDistance then
 						shortestDistance = distance
-						closestPlayer = root
+						closestPlayer = head
 					end
 				end
 			end
@@ -647,7 +656,7 @@ RunService.RenderStepped:Connect(function(delta)
 	fovFrame.Position = UDim2.new(0, mousePos.X, 0, mousePos.Y)
 	fovFrame.Visible = settings.aimEnabled
 
-	-- AIMASSIST SUAVE
+	-- AIMASSIST SUAVE (A la Cabeza)
 	if settings.aimbotTargeting and settings.aimEnabled then
 		local target = getClosestPlayer()
 		if target then
@@ -679,7 +688,6 @@ RunService.RenderStepped:Connect(function(delta)
 			local pos, onScreen = camera:WorldToViewportPoint(root.Position)
 
 			if onScreen then
-				-- Cálculo dinámico de altura/ancho de caja 2D
 				local headPos = camera:WorldToViewportPoint(root.Position + Vector3.new(0, 3, 0))
 				local legPos = camera:WorldToViewportPoint(root.Position - Vector3.new(0, 3.5, 0))
 				local height = math.abs(headPos.Y - legPos.Y)
@@ -753,15 +761,15 @@ RunService.RenderStepped:Connect(function(delta)
 		end
 	end
 
-	-- Hitbox Extender
+	-- HEAD HITBOX EXTENDER (Exclusivo para la Cabeza)
 	if settings.hitboxEnabled then
 		for _, player in ipairs(Players:GetPlayers()) do
 			if player ~= localPlayer and player.Character then
-				local targetPart = getRootPart(player.Character)
-				if targetPart then
-					targetPart.Size = Vector3.new(settings.hitboxSize, settings.hitboxSize, settings.hitboxSize)
-					targetPart.Transparency = 0.6
-					targetPart.CanCollide = false
+				local head = getHeadPart(player.Character)
+				if head then
+					head.Size = Vector3.new(settings.hitboxSize, settings.hitboxSize, settings.hitboxSize)
+					head.Transparency = 0.6
+					head.CanCollide = false
 				end
 			end
 		end
