@@ -43,8 +43,8 @@ end
 print(ProtectionConfig.HubName .. " Loaded Successfully!")
 
 --[[
-    SOVICH - TWD3 PRO (DRAWING TRACERS + METROS ESP + SEARCH TELEPORT)
-    v3.2 Update: Universal Movement Engine Fix (Supports CFrame / JumpHeight / WalkSpeed)
+    SOVICH - TWD3 PRO (DRAWING TRACERS + METROS ESP + SEARCH TELEPORT + SPINBOT)
+    v3.3 Update: Universal Movement Engine Fix + Spinbot Added
 ]]--
 
 local Players = game:GetService("Players")
@@ -72,6 +72,8 @@ local settings = {
 	jumpEnabled = false,
 	bhopEnabled = false,
 	hitboxEnabled = false,
+	spinbotEnabled = false,
+	spinbotSpeed = 20,
 	targetPart = "Head",
 	hitboxSize = 5,
 	fovRadius = 140,
@@ -191,7 +193,7 @@ titleText.BackgroundTransparency = 1
 titleText.TextColor3 = Color3.fromRGB(210, 160, 255)
 titleText.TextSize = 13
 titleText.Font = Enum.Font.GothamBold
-titleText.Text = "SOVICH HUB  |  v3.2 Pro"
+titleText.Text = "SOVICH HUB  |  v3.3 Pro"
 titleText.TextXAlignment = Enum.TextXAlignment.Left
 titleText.Parent = topBar
 
@@ -238,7 +240,7 @@ local function createTabContent(name)
 	scroll.Name = name .. "Content"
 	scroll.Size = UDim2.new(1, 0, 1, 0)
 	scroll.BackgroundTransparency = 1
-	scroll.CanvasSize = UDim2.new(0, 0, 0, 500)
+	scroll.CanvasSize = UDim2.new(0, 0, 0, 600)
 	scroll.ScrollBarThickness = 4
 	scroll.ScrollBarImageColor3 = Color3.fromRGB(150, 0, 220)
 	scroll.Visible = false
@@ -461,6 +463,18 @@ createButtonIn(tabCombat, 4, "Hitbox Extender: OFF", function(btn)
 	btn.BackgroundColor3 = settings.hitboxEnabled and Color3.fromRGB(60, 0, 110) or Color3.fromRGB(25, 20, 40)
 end)
 createSliderIn(tabCombat, 5, settings.hitboxSize, 2, 20, "Tamaño Hitbox", function(val) settings.hitboxSize = val end)
+
+-- AGREGADO: SPINBOT
+createButtonIn(tabCombat, 6, "Spinbot: OFF", function(btn)
+	settings.spinbotEnabled = not settings.spinbotEnabled
+	btn.Text = settings.spinbotEnabled and "Spinbot: ON" or "Spinbot: OFF"
+	btn.BackgroundColor3 = settings.spinbotEnabled and Color3.fromRGB(60, 0, 110) or Color3.fromRGB(25, 20, 40)
+	
+	if localPlayer.Character and localPlayer.Character:FindFirstChild("Humanoid") then
+		localPlayer.Character.Humanoid.AutoRotate = not settings.spinbotEnabled
+	end
+end)
+createSliderIn(tabCombat, 7, settings.spinbotSpeed, 5, 100, "Velocidad Spinbot", function(val) settings.spinbotSpeed = val end)
 
 createButtonIn(tabMovement, 1, "Fly (Volar): OFF", function(btn)
 	settings.flyEnabled = not settings.flyEnabled
@@ -692,6 +706,16 @@ RunService.RenderStepped:Connect(function(delta)
 			local targetCF = CFrame.new(camera.CFrame.Position, target.Position)
 			local smoothAlpha = math.clamp(0.15 / (settings.aimSmoothness * 0.8), 0.01, 0.2)
 			camera.CFrame = camera.CFrame:Lerp(targetCF, smoothAlpha)
+		end
+	end
+
+	-- SPINBOT
+	if settings.spinbotEnabled then
+		local myRoot = localPlayer.Character:FindFirstChild("HumanoidRootPart")
+		local hum = localPlayer.Character:FindFirstChildOfClass("Humanoid")
+		if myRoot then
+			if hum then hum.AutoRotate = false end
+			myRoot.CFrame = myRoot.CFrame * CFrame.Angles(0, math.rad(settings.spinbotSpeed), 0)
 		end
 	end
 
