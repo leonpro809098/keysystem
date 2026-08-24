@@ -44,18 +44,22 @@ print(ProtectionConfig.HubName .. " Loaded Successfully!")
 
 --[[
     SOVICH - TWD3 PRO (UNIVERSAL 2D DRAWING ESP + SEARCH TELEPORT + SPINBOT)
-    v3.5 Update: Head Hitbox Fix
+    v4.0 Update: Silent Aim, Wallbang, Triggerbot, Chams, Skeleton ESP, Anti-AFK & Utilidades
 ]]--
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local TeleportService = game:GetService("TeleportService")
+local VirtualUser = game:GetService("VirtualUser")
+local HttpService = game:GetService("HttpService")
 local localPlayer = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
 local defaultWalkSpeed = 16
 local defaultJumpPower = 50
 local defaultJumpHeight = 7.2
+local originalFOV = camera.FieldOfView
 
 local settings = {
 	aimEnabled = false,
@@ -83,7 +87,20 @@ local settings = {
 	customJump = 100,
 	espColor = Color3.fromRGB(170, 0, 255),
 	aimbotTargeting = false,
-	tpSearchText = ""
+	tpSearchText = "",
+	
+	-- NUEVAS CONFIGURACIONES
+	silentAim = false,
+	wallbang = false,
+	removeRecoil = false,
+	triggerbot = false,
+	chamsEnabled = false,
+	crosshairEnabled = false,
+	skeletonESP = false,
+	fovChanger = false,
+	customCameraFOV = 70,
+	antiAFK = false,
+	targetInfoEnabled = false
 }
 
 local function setupCharacter(char)
@@ -122,6 +139,45 @@ fovStroke.Parent = fovFrame
 local fovCorner = Instance.new("UICorner")
 fovCorner.CornerRadius = UDim.new(1, 0)
 fovCorner.Parent = fovFrame
+
+--// CROSSHAIR PERSONALIZADO
+local crosshairH = Drawing.new("Line")
+crosshairH.Thickness = 1.5
+crosshairH.Color = Color3.fromRGB(0, 255, 170)
+crosshairH.Visible = false
+
+local crosshairV = Drawing.new("Line")
+crosshairV.Thickness = 1.5
+crosshairV.Color = Color3.fromRGB(0, 255, 170)
+crosshairV.Visible = false
+
+--// TARGET INFO CARD
+local targetInfoCard = Instance.new("Frame")
+targetInfoCard.Size = UDim2.new(0, 180, 0, 65)
+targetInfoCard.Position = UDim2.new(0.5, 10, 0.5, 10)
+targetInfoCard.BackgroundColor3 = Color3.fromRGB(15, 12, 24)
+targetInfoCard.Visible = false
+targetInfoCard.Parent = gui
+
+local ticCorner = Instance.new("UICorner")
+ticCorner.CornerRadius = UDim.new(0, 6)
+ticCorner.Parent = targetInfoCard
+
+local ticStroke = Instance.new("UIStroke")
+ticStroke.Color = Color3.fromRGB(170, 0, 255)
+ticStroke.Thickness = 1
+ticStroke.Parent = targetInfoCard
+
+local targetTextLabel = Instance.new("TextLabel")
+targetTextLabel.Size = UDim2.new(1, -10, 1, -10)
+targetTextLabel.Position = UDim2.new(0, 5, 0, 5)
+targetTextLabel.BackgroundTransparency = 1
+targetTextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+targetTextLabel.TextSize = 11
+targetTextLabel.Font = Enum.Font.GothamMedium
+targetTextLabel.TextXAlignment = Enum.TextXAlignment.Left
+targetTextLabel.TextYAlignment = Enum.TextYAlignment.Top
+targetTextLabel.Parent = targetInfoCard
 
 --// BOTÓN FLOTANTE
 local toggleButton = Instance.new("TextButton")
@@ -190,7 +246,7 @@ titleText.BackgroundTransparency = 1
 titleText.TextColor3 = Color3.fromRGB(210, 160, 255)
 titleText.TextSize = 13
 titleText.Font = Enum.Font.GothamBold
-titleText.Text = "SOVICH HUB  |  v3.5 Universal"
+titleText.Text = "SOVICH HUB  |  v4.0 Universal"
 titleText.TextXAlignment = Enum.TextXAlignment.Left
 titleText.Parent = topBar
 
@@ -231,13 +287,20 @@ pagesContainer.Parent = mainFrame
 
 toggleButton.MouseButton1Click:Connect(function() mainFrame.Visible = not mainFrame.Visible end)
 
+-- Keybind para ocultar/mostrar UI rápida
+UserInputService.InputBegan:Connect(function(input, gpe)
+	if not gpe and (input.KeyCode == Enum.KeyCode.Insert or input.KeyCode == Enum.KeyCode.RightControl) then
+		mainFrame.Visible = not mainFrame.Visible
+	end
+end)
+
 local tabs, currentTab = {}, nil
 local function createTabContent(name)
 	local scroll = Instance.new("ScrollingFrame")
 	scroll.Name = name .. "Content"
 	scroll.Size = UDim2.new(1, 0, 1, 0)
 	scroll.BackgroundTransparency = 1
-	scroll.CanvasSize = UDim2.new(0, 0, 0, 600)
+	scroll.CanvasSize = UDim2.new(0, 0, 0, 800)
 	scroll.ScrollBarThickness = 4
 	scroll.ScrollBarImageColor3 = Color3.fromRGB(150, 0, 220)
 	scroll.Visible = false
@@ -253,6 +316,7 @@ local tabMain = createTabContent("Principal")
 local tabCombat = createTabContent("Combate")
 local tabMovement = createTabContent("Movimiento")
 local tabVisuals = createTabContent("Visuales")
+local tabUtils = createTabContent("Utilidades")
 
 local tabTeleport = Instance.new("Frame")
 tabTeleport.Name = "TeleportContent"
@@ -325,6 +389,7 @@ createSidebarButton(2, "Combate", tabCombat)
 createSidebarButton(3, "Movimiento", tabMovement)
 createSidebarButton(4, "Visuales", tabVisuals)
 createSidebarButton(5, "Teleport", tabTeleport)
+createSidebarButton(6, "Utilidades", tabUtils)
 
 local function createButtonIn(parentScroll, order, text, callback)
 	local btn = Instance.new("TextButton")
@@ -413,7 +478,7 @@ local function createSliderIn(parentScroll, order, defaultVal, minVal, maxVal, t
 	return container
 end
 
--- CONTROLES
+-- CONTROLES PRINCIPALES
 createButtonIn(tabMain, 1, "SpeedHack: OFF", function(btn)
 	settings.speedEnabled = not settings.speedEnabled
 	btn.Text = settings.speedEnabled and "SpeedHack: ON" or "SpeedHack: OFF"
@@ -436,6 +501,7 @@ createButtonIn(tabMain, 3, "Super Jump: OFF", function(btn)
 end)
 createSliderIn(tabMain, 4, settings.customJump, 50, 350, "Altura Salto", function(val) settings.customJump = val end)
 
+-- CONTROLES DE COMBATE
 createButtonIn(tabCombat, 1, "Aimbot / AimAssist: OFF", function(btn)
 	settings.aimEnabled = not settings.aimEnabled
 	btn.Text = settings.aimEnabled and "Aimbot / AimAssist: ON" or "Aimbot / AimAssist: OFF"
@@ -444,16 +510,75 @@ end)
 createSliderIn(tabCombat, 2, settings.fovRadius, 50, 300, "Tamaño FOV", function(val)
 	settings.fovRadius = val; fovFrame.Size = UDim2.new(0, val * 2, 0, val * 2)
 end)
-createSliderIn(tabCombat, 3, settings.aimSmoothness, 1, 10, "AimAssist Suavizado (1=Fuerte, 10=Súper Suave)", function(val) settings.aimSmoothness = val end)
+createSliderIn(tabCombat, 3, settings.aimSmoothness, 1, 10, "AimAssist Suavizado", function(val) settings.aimSmoothness = val end)
 
-createButtonIn(tabCombat, 4, "Head Hitbox Extender: OFF", function(btn)
+-- SILENT AIM
+createButtonIn(tabCombat, 4, "Silent Aim: OFF", function(btn)
+	settings.silentAim = not settings.silentAim
+	btn.Text = settings.silentAim and "Silent Aim: ON" or "Silent Aim: OFF"
+	btn.BackgroundColor3 = settings.silentAim and Color3.fromRGB(60, 0, 110) or Color3.fromRGB(25, 20, 40)
+end)
+
+-- WALLBANG
+local disabledMapCollisions = {}
+createButtonIn(tabCombat, 5, "Wallbang / Penetración: OFF", function(btn)
+	settings.wallbang = not settings.wallbang
+	btn.Text = settings.wallbang and "Wallbang / Penetración: ON" or "Wallbang / Penetración: OFF"
+	btn.BackgroundColor3 = settings.wallbang and Color3.fromRGB(60, 0, 110) or Color3.fromRGB(25, 20, 40)
+	
+	local map = workspace:FindFirstChild("Map") or workspace:FindFirstChild("map")
+	if map then
+		for _, part in ipairs(map:GetDescendants()) do
+			if part:IsA("BasePart") then
+				if settings.wallbang then
+					if part.CanCollide then
+						disabledMapCollisions[part] = true
+						part.CanCollide = false
+					end
+				else
+					if disabledMapCollisions[part] then
+						part.CanCollide = true
+					end
+				end
+			end
+		end
+	end
+	if not settings.wallbang then table.clear(disabledMapCollisions) end
+end)
+
+-- REMOVE RECOIL / SPREAD
+createButtonIn(tabCombat, 6, "Remove Recoil / Spread: OFF", function(btn)
+	settings.removeRecoil = not settings.removeRecoil
+	btn.Text = settings.removeRecoil and "Remove Recoil / Spread: ON" or "Remove Recoil / Spread: OFF"
+	btn.BackgroundColor3 = settings.removeRecoil and Color3.fromRGB(60, 0, 110) or Color3.fromRGB(25, 20, 40)
+end)
+
+-- TRIGGERBOT
+createButtonIn(tabCombat, 7, "Auto Shoot / Triggerbot: OFF", function(btn)
+	settings.triggerbot = not settings.triggerbot
+	btn.Text = settings.triggerbot and "Auto Shoot / Triggerbot: ON" or "Auto Shoot / Triggerbot: OFF"
+	btn.BackgroundColor3 = settings.triggerbot and Color3.fromRGB(60, 0, 110) or Color3.fromRGB(25, 20, 40)
+end)
+
+local originalHeadSizes = {}
+createButtonIn(tabCombat, 8, "Head Hitbox Extender: OFF", function(btn)
 	settings.hitboxEnabled = not settings.hitboxEnabled
 	btn.Text = settings.hitboxEnabled and "Head Hitbox Extender: ON" or "Head Hitbox Extender: OFF"
 	btn.BackgroundColor3 = settings.hitboxEnabled and Color3.fromRGB(60, 0, 110) or Color3.fromRGB(25, 20, 40)
+	if not settings.hitboxEnabled then
+		for p, size in pairs(originalHeadSizes) do
+			if p and p.Parent then
+				p.Size = size
+				p.Transparency = 0
+				p.CanCollide = true
+			end
+		end
+		table.clear(originalHeadSizes)
+	end
 end)
-createSliderIn(tabCombat, 5, settings.hitboxSize, 2, 20, "Tamaño Hitbox Cabeza", function(val) settings.hitboxSize = val end)
+createSliderIn(tabCombat, 9, settings.hitboxSize, 2, 20, "Tamaño Hitbox Cabeza", function(val) settings.hitboxSize = val end)
 
-createButtonIn(tabCombat, 6, "Spinbot: OFF", function(btn)
+createButtonIn(tabCombat, 10, "Spinbot: OFF", function(btn)
 	settings.spinbotEnabled = not settings.spinbotEnabled
 	btn.Text = settings.spinbotEnabled and "Spinbot: ON" or "Spinbot: OFF"
 	btn.BackgroundColor3 = settings.spinbotEnabled and Color3.fromRGB(60, 0, 110) or Color3.fromRGB(25, 20, 40)
@@ -461,8 +586,9 @@ createButtonIn(tabCombat, 6, "Spinbot: OFF", function(btn)
 		localPlayer.Character:FindFirstChildOfClass("Humanoid").AutoRotate = not settings.spinbotEnabled
 	end
 end)
-createSliderIn(tabCombat, 7, settings.spinbotSpeed, 5, 100, "Velocidad Spinbot", function(val) settings.spinbotSpeed = val end)
+createSliderIn(tabCombat, 11, settings.spinbotSpeed, 5, 100, "Velocidad Spinbot", function(val) settings.spinbotSpeed = val end)
 
+-- CONTROLES DE MOVIMIENTO
 createButtonIn(tabMovement, 1, "Fly (Volar): OFF", function(btn)
 	settings.flyEnabled = not settings.flyEnabled
 	btn.Text = settings.flyEnabled and "Fly (Volar): ON" or "Fly (Volar): OFF"
@@ -482,6 +608,7 @@ createButtonIn(tabMovement, 4, "BunnyHop (Bhop): OFF", function(btn)
 	btn.BackgroundColor3 = settings.bhopEnabled and Color3.fromRGB(60, 0, 110) or Color3.fromRGB(25, 20, 40)
 end)
 
+-- CONTROLES VISUALES
 createButtonIn(tabVisuals, 1, "ESP Master: OFF", function(btn)
 	settings.espEnabled = not settings.espEnabled
 	btn.Text = settings.espEnabled and "ESP Master: ON" or "ESP Master: OFF"
@@ -506,6 +633,85 @@ end)
 createButtonIn(tabVisuals, 6, "Líneas (Tracers): ON", function(btn)
 	settings.espTracersEnabled = not settings.espTracersEnabled
 	btn.Text = settings.espTracersEnabled and "Líneas (Tracers): ON" or "Líneas (Tracers): OFF"
+end)
+
+-- CHAMS (HIGHLIGHT)
+local activeChams = {}
+createButtonIn(tabVisuals, 7, "Chams (Highlights Equipos): OFF", function(btn)
+	settings.chamsEnabled = not settings.chamsEnabled
+	btn.Text = settings.chamsEnabled and "Chams: ON" or "Chams: OFF"
+	btn.BackgroundColor3 = settings.chamsEnabled and Color3.fromRGB(60, 0, 110) or Color3.fromRGB(25, 20, 40)
+	
+	if not settings.chamsEnabled then
+		for _, h in pairs(activeChams) do h:Destroy() end
+		table.clear(activeChams)
+	end
+end)
+
+-- CROSSHAIR PERSONALIZADO
+createButtonIn(tabVisuals, 8, "Crosshair Personalizado: OFF", function(btn)
+	settings.crosshairEnabled = not settings.crosshairEnabled
+	btn.Text = settings.crosshairEnabled and "Crosshair 2D: ON" or "Crosshair 2D: OFF"
+	btn.BackgroundColor3 = settings.crosshairEnabled and Color3.fromRGB(60, 0, 110) or Color3.fromRGB(25, 20, 40)
+	crosshairH.Visible = settings.crosshairEnabled
+	crosshairV.Visible = settings.crosshairEnabled
+end)
+
+-- SKELETON ESP
+createButtonIn(tabVisuals, 9, "Skeleton ESP: OFF", function(btn)
+	settings.skeletonESP = not settings.skeletonESP
+	btn.Text = settings.skeletonESP and "Skeleton ESP: ON" or "Skeleton ESP: OFF"
+	btn.BackgroundColor3 = settings.skeletonESP and Color3.fromRGB(60, 0, 110) or Color3.fromRGB(25, 20, 40)
+end)
+
+-- FOV CHANGER
+createButtonIn(tabVisuals, 10, "FOV Changer: OFF", function(btn)
+	settings.fovChanger = not settings.fovChanger
+	btn.Text = settings.fovChanger and "FOV Changer: ON" or "FOV Changer: OFF"
+	btn.BackgroundColor3 = settings.fovChanger and Color3.fromRGB(60, 0, 110) or Color3.fromRGB(25, 20, 40)
+	if not settings.fovChanger then camera.FieldOfView = originalFOV end
+end)
+createSliderIn(tabVisuals, 11, settings.customCameraFOV, 40, 120, "Campo de Visión (FOV)", function(val)
+	settings.customCameraFOV = val
+	if settings.fovChanger then camera.FieldOfView = val end
+end)
+
+-- CONTROLES DE UTILIDADES
+createButtonIn(tabUtils, 1, "Anti-AFK Proteccion: OFF", function(btn)
+	settings.antiAFK = not settings.antiAFK
+	btn.Text = settings.antiAFK and "Anti-AFK: ON" or "Anti-AFK: OFF"
+	btn.BackgroundColor3 = settings.antiAFK and Color3.fromRGB(60, 0, 110) or Color3.fromRGB(25, 20, 40)
+end)
+
+createButtonIn(tabUtils, 2, "Crosshair Target Info Card: OFF", function(btn)
+	settings.targetInfoEnabled = not settings.targetInfoEnabled
+	btn.Text = settings.targetInfoEnabled and "Target Info: ON" or "Target Info: OFF"
+	btn.BackgroundColor3 = settings.targetInfoEnabled and Color3.fromRGB(60, 0, 110) or Color3.fromRGB(25, 20, 40)
+	targetInfoCard.Visible = false
+end)
+
+createButtonIn(tabUtils, 3, "Server Hop (Servidor Liviano)", function()
+	pcall(function()
+		local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100")).data
+		for _, s in ipairs(servers) do
+			if s.playing < s.maxPlayers and s.id ~= game.JobId then
+				TeleportService:TeleportToPlaceInstance(game.PlaceId, s.id)
+				break
+			end
+		end
+	end)
+end)
+
+createButtonIn(tabUtils, 4, "Rejoin (Reconectar)", function()
+	TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, localPlayer)
+end)
+
+-- ANTI AFK SYSTEM
+localPlayer.Idled:Connect(function()
+	if settings.antiAFK then
+		VirtualUser:CaptureController()
+		VirtualUser:ClickButton2(Vector2.new())
+	end
 end)
 
 --// ESP ENGINE UNIVERSAL (DRAWING API 2D)
@@ -539,15 +745,28 @@ local function createESP2D(player)
 	line.Color = settings.espColor
 	line.Thickness = 1.5
 
-	esp2D[player] = {box = box, name = name, info = info, line = line}
+	-- Skeleton Lines
+	local skelLines = {}
+	for i = 1, 6 do
+		local l = Drawing.new("Line")
+		l.Visible = false
+		l.Color = Color3.fromRGB(255, 255, 255)
+		l.Thickness = 1
+		table.insert(skelLines, l)
+	end
+
+	esp2D[player] = {box = box, name = name, info = info, line = line, skel = skelLines}
 end
 
 local function removeESP2D(player)
 	if esp2D[player] then
-		esp2D[player].box:Remove()
-		esp2D[player].name:Remove()
-		esp2D[player].info:Remove()
-		esp2D[player].line:Remove()
+		pcall(function()
+			esp2D[player].box:Remove()
+			esp2D[player].name:Remove()
+			esp2D[player].info:Remove()
+			esp2D[player].line:Remove()
+			for _, l in ipairs(esp2D[player].skel) do l:Remove() end
+		end)
 		esp2D[player] = nil
 	end
 end
@@ -573,6 +792,19 @@ local function getRootPart(char)
 		or getHeadPart(char)
 		or char:FindFirstChildOfClass("BasePart")
 end
+
+-- HOOK SILENT AIM
+local namecall
+namecall = hookmetamethod(game, "__namecall", function(self, ...)
+	local method = getnamecallmethod()
+	if settings.silentAim and (method == "FindPartOnRayWithIgnoreList" or method == "Raycast") then
+		local targetHead = getClosestPlayer()
+		if targetHead then
+			return targetHead, targetHead.Position, targetHead.CFrame.LookVector, targetHead.Material
+		end
+	end
+	return namecall(self, ...)
+end)
 
 --// LISTA DINÁMICA DE TELEPORT CON BÚSQUEDA
 local function updateTeleportList()
@@ -656,6 +888,44 @@ RunService.RenderStepped:Connect(function(delta)
 	fovFrame.Position = UDim2.new(0, mousePos.X, 0, mousePos.Y)
 	fovFrame.Visible = settings.aimEnabled
 
+	-- FOV CHANGER
+	if settings.fovChanger then camera.FieldOfView = settings.customCameraFOV end
+
+	-- CROSSHAIR DIBUJO
+	if settings.crosshairEnabled then
+		local center = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+		crosshairH.From = Vector2.new(center.X - 8, center.Y)
+		crosshairH.To = Vector2.new(center.X + 8, center.Y)
+		crosshairV.From = Vector2.new(center.X, center.Y - 8)
+		crosshairV.To = Vector2.new(center.X, center.Y + 8)
+	end
+
+	-- REMOVE RECOIL/SPREAD EN HERRAMIENTAS
+	if settings.removeRecoil then
+		local tool = localPlayer.Character:FindFirstChildOfClass("Tool")
+		if tool then
+			for _, v in ipairs(tool:GetDescendants()) do
+				if v:IsA("NumberValue") or v:IsA("IntValue") then
+					if v.Name:lower():find("recoil") or v.Name:lower():find("spread") then
+						v.Value = 0
+					end
+				end
+			end
+		end
+	end
+
+	-- TRIGGERBOT
+	if settings.triggerbot then
+		local ray = camera:ViewportPointToRay(mousePos.X, mousePos.Y)
+		local raycastResult = workspace:Raycast(ray.Origin, ray.Direction * 1000)
+		if raycastResult and raycastResult.Instance then
+			local hitModel = raycastResult.Instance:FindFirstAncestorOfClass("Model")
+			if hitModel and hitModel ~= localPlayer.Character and Players:GetPlayerFromCharacter(hitModel) then
+				mouse1click()
+			end
+		end
+	end
+
 	-- AIMASSIST SUAVE (A la Cabeza)
 	if settings.aimbotTargeting and settings.aimEnabled then
 		local target = getClosestPlayer()
@@ -663,6 +933,32 @@ RunService.RenderStepped:Connect(function(delta)
 			local targetCF = CFrame.new(camera.CFrame.Position, target.Position)
 			local smoothAlpha = math.clamp(0.15 / (settings.aimSmoothness * 0.8), 0.01, 0.2)
 			camera.CFrame = camera.CFrame:Lerp(targetCF, smoothAlpha)
+		end
+	end
+
+	-- TARGET INFO CARD EN CRUZ / RETÍCULA
+	if settings.targetInfoEnabled then
+		local ray = camera:ViewportPointToRay(mousePos.X, mousePos.Y)
+		local result = workspace:Raycast(ray.Origin, ray.Direction * 1000)
+		if result and result.Instance then
+			local char = result.Instance:FindFirstAncestorOfClass("Model")
+			local p = char and Players:GetPlayerFromCharacter(char)
+			local hum = char and char:FindFirstChildOfClass("Humanoid")
+			local myRoot = getRootPart(localPlayer.Character)
+			local targetRoot = char and getRootPart(char)
+
+			if p and hum and myRoot and targetRoot then
+				local dist = math.floor((myRoot.Position - targetRoot.Position).Magnitude / 3.57)
+				local tool = char:FindFirstChildOfClass("Tool")
+				local weaponName = tool and tool.Name or "Ninguna"
+
+				targetTextLabel.Text = string.format("Objetivo: %s\nVida: %d/%d\nArma: %s\nDistancia: %dm", p.DisplayName, hum.Health, hum.MaxHealth, weaponName, dist)
+				targetInfoCard.Visible = true
+			else
+				targetInfoCard.Visible = false
+			end
+		else
+			targetInfoCard.Visible = false
 		end
 	end
 
@@ -676,13 +972,27 @@ RunService.RenderStepped:Connect(function(delta)
 		end
 	end
 
-	-- ACTUALIZAR ESP 2D
+	-- ACTUALIZAR ESP 2D, SKELETON Y CHAMS
 	local myRoot = getRootPart(localPlayer.Character)
 
 	for player, draw in pairs(esp2D) do
 		local char = player.Character
 		local root = getRootPart(char)
 		local hum = char and char:FindFirstChildOfClass("Humanoid")
+
+		-- CHAMS LOGIC
+		if settings.chamsEnabled and char then
+			if not activeChams[char] then
+				local highlight = Instance.new("Highlight")
+				highlight.Parent = char
+				highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+				
+				local isAlly = (player.Team and localPlayer.Team and player.Team == localPlayer.Team)
+				highlight.FillColor = isAlly and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(255, 30, 30)
+				highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+				activeChams[char] = highlight
+			end
+		end
 
 		if settings.espEnabled and char and root and (not hum or hum.Health > 0) then
 			local pos, onScreen = camera:WorldToViewportPoint(root.Position)
@@ -740,17 +1050,48 @@ RunService.RenderStepped:Connect(function(delta)
 				else
 					draw.line.Visible = false
 				end
+
+				-- SKELETON ESP
+				if settings.skeletonESP then
+					local head = char:FindFirstChild("Head")
+					local torso = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
+					local leftArm = char:FindFirstChild("LeftUpperArm") or char:FindFirstChild("Left Arm")
+					local rightArm = char:FindFirstChild("RightUpperArm") or char:FindFirstChild("Right Arm")
+					local leftLeg = char:FindFirstChild("LeftUpperLeg") or char:FindFirstChild("Left Leg")
+					local rightLeg = char:FindFirstChild("RightUpperLeg") or char:FindFirstChild("Right Leg")
+
+					if head and torso then
+						local hP = camera:WorldToViewportPoint(head.Position)
+						local tP = camera:WorldToViewportPoint(torso.Position)
+						draw.skel[1].From = Vector2.new(hP.X, hP.Y); draw.skel[1].To = Vector2.new(tP.X, tP.Y); draw.skel[1].Visible = true
+
+						if leftArm then
+							local lAP = camera:WorldToViewportPoint(leftArm.Position)
+							draw.skel[2].From = Vector2.new(tP.X, tP.Y); draw.skel[2].To = Vector2.new(lAP.X, lAP.Y); draw.skel[2].Visible = true
+						end
+						if rightArm then
+							local rAP = camera:WorldToViewportPoint(rightArm.Position)
+							draw.skel[3].From = Vector2.new(tP.X, tP.Y); draw.skel[3].To = Vector2.new(rAP.X, rAP.Y); draw.skel[3].Visible = true
+						end
+						if leftLeg then
+							local lLP = camera:WorldToViewportPoint(leftLeg.Position)
+							draw.skel[4].From = Vector2.new(tP.X, tP.Y); draw.skel[4].To = Vector2.new(lLP.X, lLP.Y); draw.skel[4].Visible = true
+						end
+						if rightLeg then
+							local rLP = camera:WorldToViewportPoint(rightLeg.Position)
+							draw.skel[5].From = Vector2.new(tP.X, tP.Y); draw.skel[5].To = Vector2.new(rLP.X, rLP.Y); draw.skel[5].Visible = true
+						end
+					end
+				else
+					for _, l in ipairs(draw.skel) do l.Visible = false end
+				end
 			else
-				draw.box.Visible = false
-				draw.name.Visible = false
-				draw.info.Visible = false
-				draw.line.Visible = false
+				draw.box.Visible = false; draw.name.Visible = false; draw.info.Visible = false; draw.line.Visible = false
+				for _, l in ipairs(draw.skel) do l.Visible = false end
 			end
 		else
-			draw.box.Visible = false
-			draw.name.Visible = false
-			draw.info.Visible = false
-			draw.line.Visible = false
+			draw.box.Visible = false; draw.name.Visible = false; draw.info.Visible = false; draw.line.Visible = false
+			for _, l in ipairs(draw.skel) do l.Visible = false end
 		end
 	end
 
@@ -761,12 +1102,13 @@ RunService.RenderStepped:Connect(function(delta)
 		end
 	end
 
-	-- HEAD HITBOX EXTENDER (Exclusivo para la Cabeza)
+	-- HEAD HITBOX EXTENDER
 	if settings.hitboxEnabled then
 		for _, player in ipairs(Players:GetPlayers()) do
 			if player ~= localPlayer and player.Character then
 				local head = getHeadPart(player.Character)
 				if head then
+					if not originalHeadSizes[head] then originalHeadSizes[head] = head.Size end
 					head.Size = Vector3.new(settings.hitboxSize, settings.hitboxSize, settings.hitboxSize)
 					head.Transparency = 0.6
 					head.CanCollide = false
@@ -775,10 +1117,9 @@ RunService.RenderStepped:Connect(function(delta)
 		end
 	end
 
-	-- Speed / Jump / Bhop (MECANISMO UNIVERSAL)
+	-- Speed / Jump / Bhop
 	local humanoid = localPlayer.Character:FindFirstChildOfClass("Humanoid")
 	if humanoid and myRoot then
-		-- SPEED
 		if settings.speedEnabled then
 			humanoid.WalkSpeed = settings.customSpeed
 			if humanoid.MoveDirection.Magnitude > 0 then
@@ -787,14 +1128,12 @@ RunService.RenderStepped:Connect(function(delta)
 			end
 		end
 		
-		-- JUMP
 		if settings.jumpEnabled then
 			humanoid.UseJumpPower = true
 			humanoid.JumpPower = settings.customJump
 			humanoid.JumpHeight = (settings.customJump / 5)
 		end
 		
-		-- BHOP
 		if settings.bhopEnabled and UserInputService:IsKeyDown(Enum.KeyCode.Space) then
 			if humanoid.FloorMaterial ~= Enum.Material.Air then humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end
 		end
