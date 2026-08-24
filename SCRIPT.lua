@@ -43,8 +43,8 @@ end
 print(ProtectionConfig.HubName .. " Loaded Successfully!")
 
 --[[
-    SOVICH - TWD3 PRO (DRAWING TRACERS + METROS ESP + SEARCH TELEPORT + SPINBOT)
-    v3.3 Update: Universal Movement Engine Fix + Spinbot Added
+    SOVICH - TWD3 PRO (UNIVERSAL 2D DRAWING ESP + SEARCH TELEPORT + SPINBOT)
+    v3.4 Update: Universal Drawing 2D ESP (Compatible con Bloxstrike, Phantom Forces, etc.)
 ]]--
 
 local Players = game:GetService("Players")
@@ -62,7 +62,8 @@ local settings = {
 	aimSmoothness = 5,
 	aimKey = Enum.UserInputType.MouseButton2,
 	espEnabled = false,
-	espNamesEnabled = false,
+	espBoxesEnabled = true,
+	espNamesEnabled = true,
 	espTracersEnabled = true,
 	espHealthEnabled = true,
 	espDistanceEnabled = true,
@@ -88,9 +89,7 @@ local settings = {
 local function setupCharacter(char)
 	local humanoid = char:WaitForChild("Humanoid", 5)
 	if humanoid then
-		if not settings.speedEnabled then
-			defaultWalkSpeed = humanoid.WalkSpeed
-		end
+		if not settings.speedEnabled then defaultWalkSpeed = humanoid.WalkSpeed end
 		if not settings.jumpEnabled then
 			defaultJumpPower = humanoid.JumpPower
 			defaultJumpHeight = humanoid.JumpHeight
@@ -98,9 +97,7 @@ local function setupCharacter(char)
 	end
 end
 
-if localPlayer.Character then
-	setupCharacter(localPlayer.Character)
-end
+if localPlayer.Character then setupCharacter(localPlayer.Character) end
 localPlayer.CharacterAdded:Connect(setupCharacter)
 
 --// GUI Principal
@@ -193,7 +190,7 @@ titleText.BackgroundTransparency = 1
 titleText.TextColor3 = Color3.fromRGB(210, 160, 255)
 titleText.TextSize = 13
 titleText.Font = Enum.Font.GothamBold
-titleText.Text = "SOVICH HUB  |  v3.3 Pro"
+titleText.Text = "SOVICH HUB  |  v3.4 Universal"
 titleText.TextXAlignment = Enum.TextXAlignment.Left
 titleText.Parent = topBar
 
@@ -346,9 +343,7 @@ local function createButtonIn(parentScroll, order, text, callback)
 	stroke.Color = Color3.fromRGB(60, 35, 90)
 	stroke.Thickness = 1
 	stroke.Parent = btn
-	if callback then 
-		btn.MouseButton1Click:Connect(function() callback(btn) end) 
-	end
+	if callback then btn.MouseButton1Click:Connect(function() callback(btn) end) end
 	return btn
 end
 
@@ -423,7 +418,6 @@ createButtonIn(tabMain, 1, "SpeedHack: OFF", function(btn)
 	settings.speedEnabled = not settings.speedEnabled
 	btn.Text = settings.speedEnabled and "SpeedHack: ON" or "SpeedHack: OFF"
 	btn.BackgroundColor3 = settings.speedEnabled and Color3.fromRGB(60, 0, 110) or Color3.fromRGB(25, 20, 40)
-	
 	if not settings.speedEnabled and localPlayer.Character then
 		local hum = localPlayer.Character:FindFirstChildOfClass("Humanoid")
 		if hum then hum.WalkSpeed = defaultWalkSpeed end
@@ -435,13 +429,9 @@ createButtonIn(tabMain, 3, "Super Jump: OFF", function(btn)
 	settings.jumpEnabled = not settings.jumpEnabled
 	btn.Text = settings.jumpEnabled and "Super Jump: ON" or "Super Jump: OFF"
 	btn.BackgroundColor3 = settings.jumpEnabled and Color3.fromRGB(60, 0, 110) or Color3.fromRGB(25, 20, 40)
-	
 	if not settings.jumpEnabled and localPlayer.Character then
 		local hum = localPlayer.Character:FindFirstChildOfClass("Humanoid")
-		if hum then 
-			hum.JumpPower = defaultJumpPower 
-			hum.JumpHeight = defaultJumpHeight
-		end
+		if hum then hum.JumpPower = defaultJumpPower; hum.JumpHeight = defaultJumpHeight end
 	end
 end)
 createSliderIn(tabMain, 4, settings.customJump, 50, 350, "Altura Salto", function(val) settings.customJump = val end)
@@ -454,9 +444,7 @@ end)
 createSliderIn(tabCombat, 2, settings.fovRadius, 50, 300, "Tamaño FOV", function(val)
 	settings.fovRadius = val; fovFrame.Size = UDim2.new(0, val * 2, 0, val * 2)
 end)
-createSliderIn(tabCombat, 3, settings.aimSmoothness, 1, 10, "AimAssist Suavizado (1=Fuerte, 10=Súper Suave)", function(val)
-	settings.aimSmoothness = val
-end)
+createSliderIn(tabCombat, 3, settings.aimSmoothness, 1, 10, "AimAssist Suavizado (1=Fuerte, 10=Súper Suave)", function(val) settings.aimSmoothness = val end)
 createButtonIn(tabCombat, 4, "Hitbox Extender: OFF", function(btn)
 	settings.hitboxEnabled = not settings.hitboxEnabled
 	btn.Text = settings.hitboxEnabled and "Hitbox Extender: ON" or "Hitbox Extender: OFF"
@@ -464,14 +452,12 @@ createButtonIn(tabCombat, 4, "Hitbox Extender: OFF", function(btn)
 end)
 createSliderIn(tabCombat, 5, settings.hitboxSize, 2, 20, "Tamaño Hitbox", function(val) settings.hitboxSize = val end)
 
--- AGREGADO: SPINBOT
 createButtonIn(tabCombat, 6, "Spinbot: OFF", function(btn)
 	settings.spinbotEnabled = not settings.spinbotEnabled
 	btn.Text = settings.spinbotEnabled and "Spinbot: ON" or "Spinbot: OFF"
 	btn.BackgroundColor3 = settings.spinbotEnabled and Color3.fromRGB(60, 0, 110) or Color3.fromRGB(25, 20, 40)
-	
-	if localPlayer.Character and localPlayer.Character:FindFirstChild("Humanoid") then
-		localPlayer.Character.Humanoid.AutoRotate = not settings.spinbotEnabled
+	if localPlayer.Character and localPlayer.Character:FindFirstChildOfClass("Humanoid") then
+		localPlayer.Character:FindFirstChildOfClass("Humanoid").AutoRotate = not settings.spinbotEnabled
 	end
 end)
 createSliderIn(tabCombat, 7, settings.spinbotSpeed, 5, 100, "Velocidad Spinbot", function(val) settings.spinbotSpeed = val end)
@@ -495,129 +481,89 @@ createButtonIn(tabMovement, 4, "BunnyHop (Bhop): OFF", function(btn)
 	btn.BackgroundColor3 = settings.bhopEnabled and Color3.fromRGB(60, 0, 110) or Color3.fromRGB(25, 20, 40)
 end)
 
-createButtonIn(tabVisuals, 1, "ESP / Chams: OFF", function(btn)
+createButtonIn(tabVisuals, 1, "ESP Master: OFF", function(btn)
 	settings.espEnabled = not settings.espEnabled
-	btn.Text = settings.espEnabled and "ESP / Chams: ON" or "ESP / Chams: OFF"
+	btn.Text = settings.espEnabled and "ESP Master: ON" or "ESP Master: OFF"
 	btn.BackgroundColor3 = settings.espEnabled and Color3.fromRGB(60, 0, 110) or Color3.fromRGB(25, 20, 40)
 end)
-createButtonIn(tabVisuals, 2, "Mostrar Nombres: OFF", function(btn)
+createButtonIn(tabVisuals, 2, "Cajas 2D (Boxes): ON", function(btn)
+	settings.espBoxesEnabled = not settings.espBoxesEnabled
+	btn.Text = settings.espBoxesEnabled and "Cajas 2D (Boxes): ON" or "Cajas 2D (Boxes): OFF"
+end)
+createButtonIn(tabVisuals, 3, "Mostrar Nombres: ON", function(btn)
 	settings.espNamesEnabled = not settings.espNamesEnabled
 	btn.Text = settings.espNamesEnabled and "Mostrar Nombres: ON" or "Mostrar Nombres: OFF"
 end)
-createButtonIn(tabVisuals, 3, "Mostrar Vida (♥ %): ON", function(btn)
+createButtonIn(tabVisuals, 4, "Mostrar Vida (♥ %): ON", function(btn)
 	settings.espHealthEnabled = not settings.espHealthEnabled
 	btn.Text = settings.espHealthEnabled and "Mostrar Vida (♥ %): ON" or "Mostrar Vida (♥ %): OFF"
 end)
-createButtonIn(tabVisuals, 4, "Mostrar Distancia (m): ON", function(btn)
+createButtonIn(tabVisuals, 5, "Mostrar Distancia (m): ON", function(btn)
 	settings.espDistanceEnabled = not settings.espDistanceEnabled
 	btn.Text = settings.espDistanceEnabled and "Mostrar Distancia (m): ON" or "Mostrar Distancia (m): OFF"
 end)
-createButtonIn(tabVisuals, 5, "Líneas (Tracers): ON", function(btn)
+createButtonIn(tabVisuals, 6, "Líneas (Tracers): ON", function(btn)
 	settings.espTracersEnabled = not settings.espTracersEnabled
 	btn.Text = settings.espTracersEnabled and "Líneas (Tracers): ON" or "Líneas (Tracers): OFF"
 end)
 
---// SISTEMA ESP Y TRACERS 2D EXACTOS
-local espObjects = {}
+--// ESP ENGINE UNIVERSAL (DRAWING API 2D)
+local esp2D = {}
 
-local function applyHighlight(player, char)
-	if not char then return end
-	local espInfo = espObjects[player]
-	if not espInfo then return end
+local function createESP2D(player)
+	if esp2D[player] then return end
 
-	if espInfo.chams then
-		espInfo.chams:Destroy()
-	end
+	local box = Drawing.new("Square")
+	box.Visible = false
+	box.Color = settings.espColor
+	box.Thickness = 1.5
+	box.Filled = false
 
-	local highlight = Instance.new("Highlight")
-	highlight.Name = "Chams_" .. player.Name
-	highlight.FillColor = settings.espColor
-	highlight.FillTransparency = 0.5
-	highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-	highlight.OutlineTransparency = 0
-	highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-	highlight.Enabled = settings.espEnabled
-	highlight.Parent = char
-	espInfo.chams = highlight
+	local name = Drawing.new("Text")
+	name.Visible = false
+	name.Color = Color3.fromRGB(255, 255, 255)
+	name.Size = 13
+	name.Center = true
+	name.Outline = true
+
+	local info = Drawing.new("Text")
+	info.Visible = false
+	info.Color = Color3.fromRGB(200, 200, 200)
+	info.Size = 12
+	info.Center = true
+	info.Outline = true
+
+	local line = Drawing.new("Line")
+	line.Visible = false
+	line.Color = settings.espColor
+	line.Thickness = 1.5
+
+	esp2D[player] = {box = box, name = name, info = info, line = line}
 end
 
-local function getESP(player)
-	if not espObjects[player] then
-		local espGui = Instance.new("BillboardGui")
-		espGui.Name = "ESP_" .. player.Name
-		espGui.AlwaysOnTop = true
-		espGui.Size = UDim2.new(0, 200, 0, 60)
-		espGui.StudsOffset = Vector3.new(0, 3, 0)
-		
-		local container = Instance.new("Frame")
-		container.Size = UDim2.new(1, 0, 1, 0)
-		container.BackgroundTransparency = 1
-		container.Parent = espGui
-
-		local nameLabel = Instance.new("TextLabel")
-		nameLabel.Size = UDim2.new(1, 0, 0, 18)
-		nameLabel.Position = UDim2.new(0, 0, 0, 0)
-		nameLabel.BackgroundTransparency = 1
-		nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-		nameLabel.TextStrokeTransparency = 0
-		nameLabel.Font = Enum.Font.GothamBold
-		nameLabel.TextSize = 13
-		nameLabel.Parent = container
-
-		local healthLabel = Instance.new("TextLabel")
-		healthLabel.Size = UDim2.new(1, 0, 0, 18)
-		healthLabel.Position = UDim2.new(0, 0, 0, 18)
-		healthLabel.BackgroundTransparency = 1
-		healthLabel.TextColor3 = Color3.fromRGB(255, 70, 70)
-		healthLabel.TextStrokeTransparency = 0
-		healthLabel.Font = Enum.Font.GothamBold
-		healthLabel.TextSize = 13
-		healthLabel.Parent = container
-
-		local distLabel = Instance.new("TextLabel")
-		distLabel.Size = UDim2.new(1, 0, 0, 36)
-		distLabel.Position = UDim2.new(0, 0, 0, 36)
-		distLabel.BackgroundTransparency = 1
-		distLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-		distLabel.TextStrokeTransparency = 0
-		distLabel.Font = Enum.Font.GothamBold
-		distLabel.TextSize = 12
-		distLabel.Parent = container
-
-		local tracer = Drawing.new("Line")
-		tracer.Visible = false
-		tracer.Color = settings.espColor
-		tracer.Thickness = 1.5
-		tracer.Transparency = 1
-
-		espObjects[player] = {gui = espGui, name = nameLabel, health = healthLabel, dist = distLabel, chams = nil, line = tracer}
-
-		if player.Character then
-			applyHighlight(player, player.Character)
-		end
-		player.CharacterAdded:Connect(function(newChar)
-			task.wait(0.2)
-			applyHighlight(player, newChar)
-		end)
+local function removeESP2D(player)
+	if esp2D[player] then
+		esp2D[player].box:Remove()
+		esp2D[player].name:Remove()
+		esp2D[player].info:Remove()
+		esp2D[player].line:Remove()
+		esp2D[player] = nil
 	end
-	return espObjects[player]
 end
 
-for _, p in ipairs(Players:GetPlayers()) do
-	if p ~= localPlayer then getESP(p) end
-end
-Players.PlayerAdded:Connect(function(p)
-	if p ~= localPlayer then getESP(p) end
-end)
+for _, p in ipairs(Players:GetPlayers()) do if p ~= localPlayer then createESP2D(p) end end
+Players.PlayerAdded:Connect(function(p) if p ~= localPlayer then createESP2D(p) end end)
+Players.PlayerRemoving:Connect(removeESP2D)
 
-Players.PlayerRemoving:Connect(function(player)
-	if espObjects[player] then
-		if espObjects[player].gui then espObjects[player].gui:Destroy() end
-		if espObjects[player].chams then espObjects[player].chams:Destroy() end
-		if espObjects[player].line then espObjects[player].line:Remove() end
-		espObjects[player] = nil
-	end
-end)
+-- MOTOR PARA ENCONTRAR PARTE PRINCIPAL (Compatible con Bloxstrike)
+local function getRootPart(char)
+	if not char then return nil end
+	return char:FindFirstChild("HumanoidRootPart") 
+		or char:FindFirstChild("UpperTorso") 
+		or char:FindFirstChild("Torso") 
+		or char:FindFirstChild("Head") 
+		or char:FindFirstChildOfClass("BasePart")
+end
 
 --// LISTA DINÁMICA DE TELEPORT CON BÚSQUEDA
 local function updateTeleportList()
@@ -637,9 +583,12 @@ local function updateTeleportList()
 			
 			if filter == "" or pName:find(filter, 1, true) or pDisplayName:find(filter, 1, true) then
 				createButtonIn(tpScroll, order, "TP a: " .. targetPlayer.DisplayName .. " (@" .. targetPlayer.Name .. ")", function()
-					if targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") and localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
-						local targetPos = targetPlayer.Character.HumanoidRootPart.CFrame
-						localPlayer.Character.HumanoidRootPart.CFrame = targetPos * CFrame.new(0, 0, 3)
+					local tChar = targetPlayer.Character
+					local myChar = localPlayer.Character
+					local tRoot = getRootPart(tChar)
+					local myRoot = getRootPart(myChar)
+					if tRoot and myRoot then
+						myRoot.CFrame = tRoot.CFrame * CFrame.new(0, 0, 3)
 					end
 				end)
 				order = order + 1
@@ -665,14 +614,17 @@ local function getClosestPlayer()
 	local mousePos = UserInputService:GetMouseLocation()
 
 	for _, player in pairs(Players:GetPlayers()) do
-		if player ~= localPlayer and player.Character and player.Character:FindFirstChild(settings.targetPart) and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
-			local targetPos = player.Character[settings.targetPart].Position
-			local pos, onScreen = camera:WorldToViewportPoint(targetPos)
-			if onScreen then
-				local distance = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
-				if distance < shortestDistance then
-					shortestDistance = distance
-					closestPlayer = player.Character[settings.targetPart]
+		if player ~= localPlayer and player.Character then
+			local root = getRootPart(player.Character)
+			local hum = player.Character:FindFirstChildOfClass("Humanoid")
+			if root and (not hum or hum.Health > 0) then
+				local pos, onScreen = camera:WorldToViewportPoint(root.Position)
+				if onScreen then
+					local distance = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
+					if distance < shortestDistance then
+						shortestDistance = distance
+						closestPlayer = root
+					end
 				end
 			end
 		end
@@ -681,14 +633,10 @@ local function getClosestPlayer()
 end
 
 UserInputService.InputBegan:Connect(function(input)
-	if input.UserInputType == settings.aimKey and settings.aimEnabled then
-		settings.aimbotTargeting = true
-	end
+	if input.UserInputType == settings.aimKey and settings.aimEnabled then settings.aimbotTargeting = true end
 end)
 UserInputService.InputEnded:Connect(function(input)
-	if input.UserInputType == settings.aimKey then
-		settings.aimbotTargeting = false
-	end
+	if input.UserInputType == settings.aimKey then settings.aimbotTargeting = false end
 end)
 
 --// BUCLE PRINCIPAL
@@ -711,7 +659,7 @@ RunService.RenderStepped:Connect(function(delta)
 
 	-- SPINBOT
 	if settings.spinbotEnabled then
-		local myRoot = localPlayer.Character:FindFirstChild("HumanoidRootPart")
+		local myRoot = getRootPart(localPlayer.Character)
 		local hum = localPlayer.Character:FindFirstChildOfClass("Humanoid")
 		if myRoot then
 			if hum then hum.AutoRotate = false end
@@ -719,76 +667,82 @@ RunService.RenderStepped:Connect(function(delta)
 		end
 	end
 
-	-- ACTUALIZAR ESP Y TRACERS
-	local myRoot = localPlayer.Character:FindFirstChild("HumanoidRootPart")
+	-- ACTUALIZAR ESP 2D
+	local myRoot = getRootPart(localPlayer.Character)
 
-	for _, player in ipairs(Players:GetPlayers()) do
-		if player ~= localPlayer then
-			local espInfo = getESP(player)
-			if settings.espEnabled and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
-				local root = player.Character.HumanoidRootPart
-				local hum = player.Character.Humanoid
+	for player, draw in pairs(esp2D) do
+		local char = player.Character
+		local root = getRootPart(char)
+		local hum = char and char:FindFirstChildOfClass("Humanoid")
 
-				-- Chams
-				if espInfo.chams then
-					espInfo.chams.Enabled = true
+		if settings.espEnabled and char and root and (not hum or hum.Health > 0) then
+			local pos, onScreen = camera:WorldToViewportPoint(root.Position)
+
+			if onScreen then
+				-- Cálculo dinámico de altura/ancho de caja 2D
+				local headPos = camera:WorldToViewportPoint(root.Position + Vector3.new(0, 3, 0))
+				local legPos = camera:WorldToViewportPoint(root.Position - Vector3.new(0, 3.5, 0))
+				local height = math.abs(headPos.Y - legPos.Y)
+				local width = height / 1.8
+
+				-- CAJA
+				if settings.espBoxesEnabled then
+					draw.box.Size = Vector2.new(width, height)
+					draw.box.Position = Vector2.new(pos.X - width / 2, pos.Y - height / 2)
+					draw.box.Color = settings.espColor
+					draw.box.Visible = true
 				else
-					applyHighlight(player, player.Character)
+					draw.box.Visible = false
 				end
 
-				-- Textos Cabeza
-				espInfo.gui.Parent = player.Character
-				espInfo.gui.Adornee = player.Character:FindFirstChild("Head") or root
-
-				-- Nombres
+				-- NOMBRE
 				if settings.espNamesEnabled then
-					espInfo.name.Visible = true
-					espInfo.name.Text = player.Name
+					draw.name.Text = player.DisplayName or player.Name
+					draw.name.Position = Vector2.new(pos.X, (pos.Y - height / 2) - 16)
+					draw.name.Visible = true
 				else
-					espInfo.name.Visible = false
+					draw.name.Visible = false
 				end
 
-				-- Vida
-				if settings.espHealthEnabled then
+				-- INFORMACIÓN (VIDA / DISTANCIA)
+				local infoText = ""
+				if settings.espHealthEnabled and hum then
 					local hp = math.clamp(math.floor((hum.Health / hum.MaxHealth) * 100), 0, 100)
-					espInfo.health.Visible = true
-					espInfo.health.Text = "♥ " .. hp .. "%"
-				else
-					espInfo.health.Visible = false
+					infoText = infoText .. "♥ " .. hp .. "% "
 				end
-
-				-- Distancia en Metros
 				if settings.espDistanceEnabled and myRoot then
-					local studsDistance = (myRoot.Position - root.Position).Magnitude
-					local metersDistance = math.floor(studsDistance / 3.57)
-					espInfo.dist.Visible = true
-					espInfo.dist.Text = "[" .. metersDistance .. "m]"
-				else
-					espInfo.dist.Visible = false
+					local dist = math.floor((myRoot.Position - root.Position).Magnitude / 3.57)
+					infoText = infoText .. "[" .. dist .. "m]"
 				end
 
-				-- TRACERS
-				if settings.espTracersEnabled then
-					local pos, onScreen = camera:WorldToViewportPoint(root.Position)
-					if onScreen then
-						espInfo.line.From = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
-						espInfo.line.To = Vector2.new(pos.X, pos.Y)
-						espInfo.line.Color = settings.espColor
-						espInfo.line.Visible = true
-					else
-						espInfo.line.Visible = false
-					end
+				if infoText ~= "" then
+					draw.info.Text = infoText
+					draw.info.Position = Vector2.new(pos.X, (pos.Y + height / 2) + 2)
+					draw.info.Visible = true
 				else
-					espInfo.line.Visible = false
+					draw.info.Visible = false
+				end
+
+				-- LÍNEAS / TRACERS
+				if settings.espTracersEnabled then
+					draw.line.From = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
+					draw.line.To = Vector2.new(pos.X, pos.Y)
+					draw.line.Color = settings.espColor
+					draw.line.Visible = true
+				else
+					draw.line.Visible = false
 				end
 			else
-				espInfo.name.Visible = false
-				espInfo.health.Visible = false
-				espInfo.dist.Visible = false
-				espInfo.gui.Parent = nil
-				if espInfo.chams then espInfo.chams.Enabled = false end
-				if espInfo.line then espInfo.line.Visible = false end
+				draw.box.Visible = false
+				draw.name.Visible = false
+				draw.info.Visible = false
+				draw.line.Visible = false
 			end
+		else
+			draw.box.Visible = false
+			draw.name.Visible = false
+			draw.info.Visible = false
+			draw.line.Visible = false
 		end
 	end
 
@@ -803,7 +757,7 @@ RunService.RenderStepped:Connect(function(delta)
 	if settings.hitboxEnabled then
 		for _, player in ipairs(Players:GetPlayers()) do
 			if player ~= localPlayer and player.Character then
-				local targetPart = player.Character:FindFirstChild("Head") or player.Character:FindFirstChild("HumanoidRootPart")
+				local targetPart = getRootPart(player.Character)
 				if targetPart then
 					targetPart.Size = Vector3.new(settings.hitboxSize, settings.hitboxSize, settings.hitboxSize)
 					targetPart.Transparency = 0.6
@@ -819,8 +773,6 @@ RunService.RenderStepped:Connect(function(delta)
 		-- SPEED
 		if settings.speedEnabled then
 			humanoid.WalkSpeed = settings.customSpeed
-			
-			-- Forzado por CFrame si el juego bloquea WalkSpeed
 			if humanoid.MoveDirection.Magnitude > 0 then
 				local moveDir = humanoid.MoveDirection
 				myRoot.CFrame = myRoot.CFrame + (moveDir * (settings.customSpeed / 10) * delta * 10)
@@ -844,7 +796,7 @@ end)
 -- Fly Function
 RunService.Heartbeat:Connect(function()
 	if settings.flyEnabled and localPlayer.Character then
-		local rootPart = localPlayer.Character:FindFirstChild("HumanoidRootPart")
+		local rootPart = getRootPart(localPlayer.Character)
 		local humanoid = localPlayer.Character:FindFirstChildOfClass("Humanoid")
 		if rootPart and humanoid then
 			humanoid.PlatformStand = true
