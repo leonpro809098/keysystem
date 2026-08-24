@@ -45,6 +45,7 @@ print(ProtectionConfig.HubName .. " Loaded Successfully!")
 
 --[[
     SOVICH - TWD3 PRO (DRAWING TRACERS + METROS ESP + SEARCH TELEPORT)
+    v3.1 Update: Fixed Default WalkSpeed & JumpPower Retention
 ]]--
 
 local Players = game:GetService("Players")
@@ -52,6 +53,10 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local localPlayer = Players.LocalPlayer
 local camera = workspace.CurrentCamera
+
+-- Variables para guardar los valores por defecto del juego
+local defaultWalkSpeed = 16
+local defaultJumpPower = 50
 
 local settings = {
 	aimEnabled = false,
@@ -78,6 +83,25 @@ local settings = {
 	aimbotTargeting = false,
 	tpSearchText = ""
 }
+
+-- Función para guardar los valores reales del personaje al aparecer
+local function setupCharacter(char)
+	local humanoid = char:WaitForChild("Humanoid", 5)
+	if humanoid then
+		-- Si las funciones están apagadas, guardamos la velocidad real del juego
+		if not settings.speedEnabled then
+			defaultWalkSpeed = humanoid.WalkSpeed
+		end
+		if not settings.jumpEnabled then
+			defaultJumpPower = humanoid.JumpPower
+		end
+	end
+end
+
+if localPlayer.Character then
+	setupCharacter(localPlayer.Character)
+end
+localPlayer.CharacterAdded:Connect(setupCharacter)
 
 --// GUI Principal
 local gui = Instance.new("ScreenGui")
@@ -169,7 +193,7 @@ titleText.BackgroundTransparency = 1
 titleText.TextColor3 = Color3.fromRGB(210, 160, 255)
 titleText.TextSize = 13
 titleText.Font = Enum.Font.GothamBold
-titleText.Text = "SOVICH HUB  |  v3.0 Pro"
+titleText.Text = "SOVICH HUB  |  v3.1 Pro"
 titleText.TextXAlignment = Enum.TextXAlignment.Left
 titleText.Parent = topBar
 
@@ -400,6 +424,12 @@ createButtonIn(tabMain, 1, "SpeedHack: OFF", function(btn)
 	settings.speedEnabled = not settings.speedEnabled
 	btn.Text = settings.speedEnabled and "SpeedHack: ON" or "SpeedHack: OFF"
 	btn.BackgroundColor3 = settings.speedEnabled and Color3.fromRGB(60, 0, 110) or Color3.fromRGB(25, 20, 40)
+	
+	-- Si se apaga, devolvemos la velocidad original del juego
+	if not settings.speedEnabled and localPlayer.Character then
+		local hum = localPlayer.Character:FindFirstChildOfClass("Humanoid")
+		if hum then hum.WalkSpeed = defaultWalkSpeed end
+	end
 end)
 createSliderIn(tabMain, 2, settings.customSpeed, 16, 150, "Velocidad Walk", function(val) settings.customSpeed = val end)
 
@@ -407,6 +437,12 @@ createButtonIn(tabMain, 3, "Super Jump: OFF", function(btn)
 	settings.jumpEnabled = not settings.jumpEnabled
 	btn.Text = settings.jumpEnabled and "Super Jump: ON" or "Super Jump: OFF"
 	btn.BackgroundColor3 = settings.jumpEnabled and Color3.fromRGB(60, 0, 110) or Color3.fromRGB(25, 20, 40)
+	
+	-- Si se apaga, devolvemos la fuerza de salto original
+	if not settings.jumpEnabled and localPlayer.Character then
+		local hum = localPlayer.Character:FindFirstChildOfClass("Humanoid")
+		if hum then hum.JumpPower = defaultJumpPower end
+	end
 end)
 createSliderIn(tabMain, 4, settings.customJump, 50, 350, "Altura Salto", function(val) settings.customJump = val end)
 
@@ -755,12 +791,18 @@ RunService.RenderStepped:Connect(function()
 		end
 	end
 
-	-- Speed / Jump / Bhop
+	-- Speed / Jump / Bhop (CORREGIDO)
 	local humanoid = localPlayer.Character:FindFirstChildOfClass("Humanoid")
 	if humanoid then
-		humanoid.WalkSpeed = settings.speedEnabled and settings.customSpeed or 16
-		humanoid.JumpPower = settings.jumpEnabled and settings.customJump or 50
-		if settings.jumpEnabled then humanoid.UseJumpPower = true end
+		if settings.speedEnabled then
+			humanoid.WalkSpeed = settings.customSpeed
+		end
+		
+		if settings.jumpEnabled then
+			humanoid.JumpPower = settings.customJump
+			humanoid.UseJumpPower = true
+		end
+		
 		if settings.bhopEnabled and UserInputService:IsKeyDown(Enum.KeyCode.Space) then
 			if humanoid.FloorMaterial ~= Enum.Material.Air then humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end
 		end
