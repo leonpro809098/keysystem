@@ -19,9 +19,9 @@
 
 local ProtectionConfig = {
     -- 🔴 CRITICAL: This MUST exactly match the 'Secret' value in your Key System's Config!
-    -- If your Key System has: Secret = "Leonpro809098"
-    -- Then this must also be: SecretKey = "Leonpro809098"
-    SecretKey = "Leonpro809098",
+    -- If your Key System has: Secret = "test"
+    -- Then this must also be: SecretKey = "test"
+    SecretKey = "Leonpro8",
     
     -- The name of your Hub (shown in the kick message if they try to bypass)
     HubName = "Sovich V3"
