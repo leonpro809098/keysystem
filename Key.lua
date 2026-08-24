@@ -26,8 +26,8 @@ local Config = {
     MainScriptURL   = "https://raw.githubusercontent.com/leonpro809098/keysystem/refs/heads/main/SCRIPT.lua", -- The raw URL of your main script
     
     -- [4] Social Media Settings (Set to true to show, false to hide)
-    ShowDiscord     = false,
-    DiscordURL      = "https://discord.gg/kT55J724BK",
+    ShowDiscord     = true,
+    DiscordURL      = "https://discord.gg/wu5z66H3q",
     
     ShowInstagram   = false,
     InstagramURL    = "https://www.instagram.com/oyb0i/",
