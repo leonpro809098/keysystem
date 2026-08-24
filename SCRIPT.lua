@@ -42,8 +42,9 @@ end
 
 print(ProtectionConfig.HubName .. " Loaded Successfully!")
 
+
 --[[
-    SOVICH - TWD3 PRO (UNIVERSAL 2D DRAWING ESP + SEARCH TELEPORT + SPINBOT)
+    SOVICH HUB - TWD3 PRO (UNIVERSAL 2D DRAWING ESP + SEARCH TELEPORT + SPINBOT)
     v3.5 Update: Head Hitbox Fix
 ]]--
 
