@@ -42,9 +42,15 @@ end
 
 print(ProtectionConfig.HubName .. " Loaded Successfully!") 
 
+-------------------------------------------------------------------------------
+-- 👇 YOUR MAIN SCRIPT CODE STARTS HERE 👇
+-------------------------------------------------------------------------------
+
+print(ProtectionConfig.HubName .. " Loaded Successfully!") 
+
 --[[
     SOVICH - TWD3 PRO (UNIVERSAL 2D DRAWING ESP + SEARCH TELEPORT + SPINBOT)
-    v3.5 Update: Head Hitbox Fix
+    v3.5 Update: Head Hitbox Fix & Dead ESP Fix
 ]]--
 
 local Players = game:GetService("Players")
@@ -624,9 +630,9 @@ local function getClosestPlayer()
 
 	for _, player in pairs(Players:GetPlayers()) do
 		if player ~= localPlayer and player.Character then
-			local head = getHeadPart(player.Character) or getRootPart(player.Character)
 			local hum = player.Character:FindFirstChildOfClass("Humanoid")
-			if head and (not hum or hum.Health > 0) then
+			local head = getHeadPart(player.Character) or getRootPart(player.Character)
+			if head and hum and hum.Health > 0 then
 				local pos, onScreen = camera:WorldToViewportPoint(head.Position)
 				if onScreen then
 					local distance = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
@@ -684,7 +690,8 @@ RunService.RenderStepped:Connect(function(delta)
 		local root = getRootPart(char)
 		local hum = char and char:FindFirstChildOfClass("Humanoid")
 
-		if settings.espEnabled and char and root and (not hum or hum.Health > 0) then
+		-- CORRECCIÓN AQUÍ: Exige estrictamente un Humanoid y que esté VIVO (Health > 0)
+		if settings.espEnabled and char and root and hum and hum.Health > 0 then
 			local pos, onScreen = camera:WorldToViewportPoint(root.Position)
 
 			if onScreen then
@@ -714,7 +721,7 @@ RunService.RenderStepped:Connect(function(delta)
 
 				-- INFORMACIÓN (VIDA / DISTANCIA)
 				local infoText = ""
-				if settings.espHealthEnabled and hum then
+				if settings.espHealthEnabled then
 					local hp = math.clamp(math.floor((hum.Health / hum.MaxHealth) * 100), 0, 100)
 					infoText = infoText .. "♥ " .. hp .. "% "
 				end
@@ -765,8 +772,9 @@ RunService.RenderStepped:Connect(function(delta)
 	if settings.hitboxEnabled then
 		for _, player in ipairs(Players:GetPlayers()) do
 			if player ~= localPlayer and player.Character then
+				local hum = player.Character:FindFirstChildOfClass("Humanoid")
 				local head = getHeadPart(player.Character)
-				if head then
+				if head and hum and hum.Health > 0 then
 					head.Size = Vector3.new(settings.hitboxSize, settings.hitboxSize, settings.hitboxSize)
 					head.Transparency = 0.6
 					head.CanCollide = false
