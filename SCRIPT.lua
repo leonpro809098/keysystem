@@ -43,8 +43,52 @@ end
 print(ProtectionConfig.HubName .. " Loaded Successfully!") 
 
 --[[
-    SOVICH - TWD3 PRO (UNIVERSAL 2D DRAWING ESP FIX FOR BLOXSTRIKE)
-    v3.7 Update: Fixed ESP Drawing for Custom Avatars / BloxStrike
+    ================================================================
+    [ SCRIPT INFORMATION ]
+    Project: Custom Script
+    Author: OYB
+    YouTube: https://www.youtube.com/channel/UCAlXXV1Hbvf7WbfXARuVtiQ
+    
+    [ TERMS AND CONDITIONS ]
+    - You ARE allowed to use and modify this script for your own games.
+    - You ARE NOT allowed to re-upload, redistribute, or claim 
+      ownership of this script.
+    - Removing or altering these credits is strictly prohibited.
+    
+    Copyright (c) 2026 OYB. All rights reserved.
+    ================================================================
+]]
+
+-- ⚠️ IMPORTANT: Put this code at the VERY TOP of your Main Script (before obfuscating) ⚠️
+
+local ProtectionConfig = {
+    -- 🔴 CRITICAL: This MUST exactly match the 'Secret' value in your Key System's Config!
+    -- If your Key System has: Secret = "Test"
+    -- Then this must also be: SecretKey = "Test"
+    SecretKey = "Leonpro809098",
+    
+    -- The name of your Hub (shown in the kick message if they try to bypass)
+    HubName = "Sovich HUB"
+}
+
+-- Anti-Bypass Logic: Checks if the Key System successfully set the global variable
+if not _G[ProtectionConfig.SecretKey] then
+    local player = game:GetService("Players").LocalPlayer
+    if player then
+        player:Kick("\n🛡️ Unauthorized Execution 🛡️\n\nPlease use the official Key System to run " .. ProtectionConfig.HubName)
+    end
+    return -- Stops the rest of the script from loading!
+end
+
+-------------------------------------------------------------------------------
+-- 👇 YOUR MAIN SCRIPT CODE STARTS HERE 👇
+-------------------------------------------------------------------------------
+
+print(ProtectionConfig.HubName .. " Loaded Successfully!") 
+
+--[[
+    SOVICH - TWD3 PRO (UNIVERSAL 2D DRAWING ESP + SEARCH TELEPORT + SPINBOT)
+    v3.5 Update: Head Hitbox Fix
 ]]--
 
 local Players = game:GetService("Players")
@@ -190,7 +234,7 @@ titleText.BackgroundTransparency = 1
 titleText.TextColor3 = Color3.fromRGB(210, 160, 255)
 titleText.TextSize = 13
 titleText.Font = Enum.Font.GothamBold
-titleText.Text = "SOVICH HUB  |  v3.7 BloxStrike ESP Fix"
+titleText.Text = "SOVICH HUB  |  v3.5 Universal"
 titleText.TextXAlignment = Enum.TextXAlignment.Left
 titleText.Parent = topBar
 
@@ -451,7 +495,7 @@ createButtonIn(tabCombat, 4, "Head Hitbox Extender: OFF", function(btn)
 	btn.Text = settings.hitboxEnabled and "Head Hitbox Extender: ON" or "Head Hitbox Extender: OFF"
 	btn.BackgroundColor3 = settings.hitboxEnabled and Color3.fromRGB(60, 0, 110) or Color3.fromRGB(25, 20, 40)
 end)
-createSliderIn(tabCombat, 5, settings.hitboxSize, 2, 25, "Tamaño Hitbox Cabeza", function(val) settings.hitboxSize = val end)
+createSliderIn(tabCombat, 5, settings.hitboxSize, 2, 20, "Tamaño Hitbox Cabeza", function(val) settings.hitboxSize = val end)
 
 createButtonIn(tabCombat, 6, "Spinbot: OFF", function(btn)
 	settings.spinbotEnabled = not settings.spinbotEnabled
@@ -508,7 +552,7 @@ createButtonIn(tabVisuals, 6, "Líneas (Tracers): ON", function(btn)
 	btn.Text = settings.espTracersEnabled and "Líneas (Tracers): ON" or "Líneas (Tracers): OFF"
 end)
 
---// MOTOR ESP REHECHO (2D DRAWING COMPATIBLE CON BLOXSTRIKE)
+--// ESP ENGINE UNIVERSAL (DRAWING API 2D)
 local esp2D = {}
 
 local function createESP2D(player)
@@ -544,12 +588,10 @@ end
 
 local function removeESP2D(player)
 	if esp2D[player] then
-		pcall(function()
-			esp2D[player].box:Remove()
-			esp2D[player].name:Remove()
-			esp2D[player].info:Remove()
-			esp2D[player].line:Remove()
-		end)
+		esp2D[player].box:Remove()
+		esp2D[player].name:Remove()
+		esp2D[player].info:Remove()
+		esp2D[player].line:Remove()
 		esp2D[player] = nil
 	end
 end
@@ -558,13 +600,21 @@ for _, p in ipairs(Players:GetPlayers()) do if p ~= localPlayer then createESP2D
 Players.PlayerAdded:Connect(function(p) if p ~= localPlayer then createESP2D(p) end end)
 Players.PlayerRemoving:Connect(removeESP2D)
 
--- BÚSQUEDA GENERAL DE RAÍZ
+-- BÚSQUEDA ESPECÍFICA DE LA CABEZA
+local function getHeadPart(char)
+	if not char then return nil end
+	return char:FindFirstChild("Head") 
+		or char:FindFirstChild("FakeHead") 
+		or char:FindFirstChild("head")
+end
+
+-- BÚSQUEDA GENERAL DE RAÍZ (Para TP / Movimiento)
 local function getRootPart(char)
 	if not char then return nil end
 	return char:FindFirstChild("HumanoidRootPart") 
 		or char:FindFirstChild("UpperTorso") 
 		or char:FindFirstChild("Torso") 
-		or char:FindFirstChild("Head")
+		or getHeadPart(char)
 		or char:FindFirstChildOfClass("BasePart")
 end
 
@@ -610,7 +660,7 @@ Players.PlayerAdded:Connect(updateTeleportList)
 Players.PlayerRemoving:Connect(updateTeleportList)
 updateTeleportList()
 
---// BÚSQUEDA DE JUGADOR CERCANO (Para Aimbot)
+--// BÚSQUEDA DE JUGADOR CERCANO (Orientado a la Cabeza)
 local function getClosestPlayer()
 	local closestPlayer = nil
 	local shortestDistance = settings.fovRadius
@@ -618,15 +668,15 @@ local function getClosestPlayer()
 
 	for _, player in pairs(Players:GetPlayers()) do
 		if player ~= localPlayer and player.Character then
+			local head = getHeadPart(player.Character) or getRootPart(player.Character)
 			local hum = player.Character:FindFirstChildOfClass("Humanoid")
-			local root = getRootPart(player.Character)
-			if root and hum and hum.Health > 0 then
-				local pos, onScreen = camera:WorldToViewportPoint(root.Position)
+			if head and (not hum or hum.Health > 0) then
+				local pos, onScreen = camera:WorldToViewportPoint(head.Position)
 				if onScreen then
 					local distance = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
 					if distance < shortestDistance then
 						shortestDistance = distance
-						closestPlayer = root
+						closestPlayer = head
 					end
 				end
 			end
@@ -650,7 +700,7 @@ RunService.RenderStepped:Connect(function(delta)
 	fovFrame.Position = UDim2.new(0, mousePos.X, 0, mousePos.Y)
 	fovFrame.Visible = settings.aimEnabled
 
-	-- AIMASSIST
+	-- AIMASSIST SUAVE (A la Cabeza)
 	if settings.aimbotTargeting and settings.aimEnabled then
 		local target = getClosestPlayer()
 		if target then
@@ -670,30 +720,27 @@ RunService.RenderStepped:Connect(function(delta)
 		end
 	end
 
-	-- NUEVO SISTEMA DE RENDER ESP (Universal por BoundingBox)
+	-- ACTUALIZAR ESP 2D
 	local myRoot = getRootPart(localPlayer.Character)
 
 	for player, draw in pairs(esp2D) do
 		local char = player.Character
+		local root = getRootPart(char)
 		local hum = char and char:FindFirstChildOfClass("Humanoid")
 
-		if settings.espEnabled and char and hum and hum.Health > 0 then
-			local cframe, size = char:GetBoundingBox()
-			local rootPos = cframe.Position
-			local screenPos, onScreen = camera:WorldToViewportPoint(rootPos)
+		if settings.espEnabled and char and root and (not hum or hum.Health > 0) then
+			local pos, onScreen = camera:WorldToViewportPoint(root.Position)
 
 			if onScreen then
-				-- Cálculo de tamaño exacto 2D basado en viewport
-				local topPos = camera:WorldToViewportPoint(rootPos + Vector3.new(0, size.Y / 2, 0))
-				local bottomPos = camera:WorldToViewportPoint(rootPos - Vector3.new(0, size.Y / 2, 0))
-				
-				local height = math.abs(topPos.Y - bottomPos.Y)
-				local width = height * 0.65
+				local headPos = camera:WorldToViewportPoint(root.Position + Vector3.new(0, 3, 0))
+				local legPos = camera:WorldToViewportPoint(root.Position - Vector3.new(0, 3.5, 0))
+				local height = math.abs(headPos.Y - legPos.Y)
+				local width = height / 1.8
 
 				-- CAJA
 				if settings.espBoxesEnabled then
 					draw.box.Size = Vector2.new(width, height)
-					draw.box.Position = Vector2.new(screenPos.X - width / 2, screenPos.Y - height / 2)
+					draw.box.Position = Vector2.new(pos.X - width / 2, pos.Y - height / 2)
 					draw.box.Color = settings.espColor
 					draw.box.Visible = true
 				else
@@ -703,7 +750,7 @@ RunService.RenderStepped:Connect(function(delta)
 				-- NOMBRE
 				if settings.espNamesEnabled then
 					draw.name.Text = player.DisplayName or player.Name
-					draw.name.Position = Vector2.new(screenPos.X, (screenPos.Y - height / 2) - 16)
+					draw.name.Position = Vector2.new(pos.X, (pos.Y - height / 2) - 16)
 					draw.name.Visible = true
 				else
 					draw.name.Visible = false
@@ -711,18 +758,18 @@ RunService.RenderStepped:Connect(function(delta)
 
 				-- INFORMACIÓN (VIDA / DISTANCIA)
 				local infoText = ""
-				if settings.espHealthEnabled then
+				if settings.espHealthEnabled and hum then
 					local hp = math.clamp(math.floor((hum.Health / hum.MaxHealth) * 100), 0, 100)
 					infoText = infoText .. "♥ " .. hp .. "% "
 				end
 				if settings.espDistanceEnabled and myRoot then
-					local dist = math.floor((myRoot.Position - rootPos).Magnitude / 3.57)
+					local dist = math.floor((myRoot.Position - root.Position).Magnitude / 3.57)
 					infoText = infoText .. "[" .. dist .. "m]"
 				end
 
 				if infoText ~= "" then
 					draw.info.Text = infoText
-					draw.info.Position = Vector2.new(screenPos.X, (screenPos.Y + height / 2) + 2)
+					draw.info.Position = Vector2.new(pos.X, (pos.Y + height / 2) + 2)
 					draw.info.Visible = true
 				else
 					draw.info.Visible = false
@@ -731,7 +778,7 @@ RunService.RenderStepped:Connect(function(delta)
 				-- LÍNEAS / TRACERS
 				if settings.espTracersEnabled then
 					draw.line.From = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
-					draw.line.To = Vector2.new(screenPos.X, screenPos.Y)
+					draw.line.To = Vector2.new(pos.X, pos.Y)
 					draw.line.Color = settings.espColor
 					draw.line.Visible = true
 				else
@@ -758,16 +805,14 @@ RunService.RenderStepped:Connect(function(delta)
 		end
 	end
 
-	-- HITBOX EXTENDER (Original / Intacto)
+	-- HEAD HITBOX EXTENDER (Exclusivo para la Cabeza)
 	if settings.hitboxEnabled then
 		for _, player in ipairs(Players:GetPlayers()) do
 			if player ~= localPlayer and player.Character then
-				local hum = player.Character:FindFirstChildOfClass("Humanoid")
-				local head = player.Character:FindFirstChild("Head")
-
-				if head and hum and hum.Health > 0 then
+				local head = getHeadPart(player.Character)
+				if head then
 					head.Size = Vector3.new(settings.hitboxSize, settings.hitboxSize, settings.hitboxSize)
-					head.Transparency = 0.5
+					head.Transparency = 0.6
 					head.CanCollide = false
 				end
 			end
