@@ -48,9 +48,15 @@ print(ProtectionConfig.HubName .. " Loaded Successfully!")
 
 print(ProtectionConfig.HubName .. " Loaded Successfully!") 
 
+-------------------------------------------------------------------------------
+-- 👇 YOUR MAIN SCRIPT CODE STARTS HERE 👇
+-------------------------------------------------------------------------------
+
+print(ProtectionConfig.HubName .. " Loaded Successfully!") 
+
 --[[
     SOVICH - TWD3 PRO (UNIVERSAL 2D DRAWING ESP + SEARCH TELEPORT + SPINBOT)
-    v3.5 Update: Head Hitbox Fix & Dead ESP Fix
+    v3.6 Update: BloxStrike Hitbox Fix + Dead ESP Fix
 ]]--
 
 local Players = game:GetService("Players")
@@ -91,6 +97,8 @@ local settings = {
 	aimbotTargeting = false,
 	tpSearchText = ""
 }
+
+local originalHeadSizes = {}
 
 local function setupCharacter(char)
 	local humanoid = char:WaitForChild("Humanoid", 5)
@@ -196,7 +204,7 @@ titleText.BackgroundTransparency = 1
 titleText.TextColor3 = Color3.fromRGB(210, 160, 255)
 titleText.TextSize = 13
 titleText.Font = Enum.Font.GothamBold
-titleText.Text = "SOVICH HUB  |  v3.5 Universal"
+titleText.Text = "SOVICH HUB  |  v3.6 Universal"
 titleText.TextXAlignment = Enum.TextXAlignment.Left
 titleText.Parent = topBar
 
@@ -456,8 +464,19 @@ createButtonIn(tabCombat, 4, "Head Hitbox Extender: OFF", function(btn)
 	settings.hitboxEnabled = not settings.hitboxEnabled
 	btn.Text = settings.hitboxEnabled and "Head Hitbox Extender: ON" or "Head Hitbox Extender: OFF"
 	btn.BackgroundColor3 = settings.hitboxEnabled and Color3.fromRGB(60, 0, 110) or Color3.fromRGB(25, 20, 40)
+	
+	-- Restaurar tamaños si se apaga
+	if not settings.hitboxEnabled then
+		for head, origSize in pairs(originalHeadSizes) do
+			if head and head.Parent then
+				head.Size = origSize
+				head.Transparency = 0
+			end
+		end
+		originalHeadSizes = {}
+	end
 end)
-createSliderIn(tabCombat, 5, settings.hitboxSize, 2, 20, "Tamaño Hitbox Cabeza", function(val) settings.hitboxSize = val end)
+createSliderIn(tabCombat, 5, settings.hitboxSize, 2, 25, "Tamaño Hitbox Cabeza", function(val) settings.hitboxSize = val end)
 
 createButtonIn(tabCombat, 6, "Spinbot: OFF", function(btn)
 	settings.spinbotEnabled = not settings.spinbotEnabled
@@ -562,12 +581,13 @@ for _, p in ipairs(Players:GetPlayers()) do if p ~= localPlayer then createESP2D
 Players.PlayerAdded:Connect(function(p) if p ~= localPlayer then createESP2D(p) end end)
 Players.PlayerRemoving:Connect(removeESP2D)
 
--- BÚSQUEDA ESPECÍFICA DE LA CABEZA
+-- BÚSQUEDA AVANZADA DE CABEZA (BloxStrike / Universal)
 local function getHeadPart(char)
 	if not char then return nil end
 	return char:FindFirstChild("Head") 
 		or char:FindFirstChild("FakeHead") 
 		or char:FindFirstChild("head")
+		or char:FindFirstChild("HitboxHead")
 end
 
 -- BÚSQUEDA GENERAL DE RAÍZ (Para TP / Movimiento)
@@ -690,7 +710,6 @@ RunService.RenderStepped:Connect(function(delta)
 		local root = getRootPart(char)
 		local hum = char and char:FindFirstChildOfClass("Humanoid")
 
-		-- CORRECCIÓN AQUÍ: Exige estrictamente un Humanoid y que esté VIVO (Health > 0)
 		if settings.espEnabled and char and root and hum and hum.Health > 0 then
 			local pos, onScreen = camera:WorldToViewportPoint(root.Position)
 
@@ -768,15 +787,23 @@ RunService.RenderStepped:Connect(function(delta)
 		end
 	end
 
-	-- HEAD HITBOX EXTENDER (Exclusivo para la Cabeza)
+	-- HEAD HITBOX EXTENDER UNIVERSAL & BLOXSTRIKE FIX
 	if settings.hitboxEnabled then
 		for _, player in ipairs(Players:GetPlayers()) do
 			if player ~= localPlayer and player.Character then
 				local hum = player.Character:FindFirstChildOfClass("Humanoid")
 				local head = getHeadPart(player.Character)
+
 				if head and hum and hum.Health > 0 then
+					if not originalHeadSizes[head] then
+						originalHeadSizes[head] = head.Size
+					end
+					
+					-- Aplicar cambios de Hitbox
 					head.Size = Vector3.new(settings.hitboxSize, settings.hitboxSize, settings.hitboxSize)
-					head.Transparency = 0.6
+					head.Transparency = 0.5
+					head.Color = settings.espColor
+					head.Material = Enum.Material.SmoothPlastic
 					head.CanCollide = false
 				end
 			end
@@ -831,4 +858,5 @@ RunService.Heartbeat:Connect(function()
 		local hum = localPlayer.Character:FindFirstChildOfClass("Humanoid")
 		if hum then hum.PlatformStand = false end
 	end
+end)
 end)
