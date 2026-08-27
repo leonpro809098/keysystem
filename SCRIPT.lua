@@ -868,3 +868,52 @@ RunService.Heartbeat:Connect(function()
 		if hum then hum.PlatformStand = false end
 	end
 end)
+
+-------------------------------------------------------------------------------
+-- 👇 SKIN CHANGER EXPERIMENTAL (CUCHILLOS VISUALES) 👇
+-------------------------------------------------------------------------------
+local skinSettings = {
+	enabled = true,
+	knifeModel = "Karambit", -- Opciones: "Karambit", "Butterfly"
+	meshId = "rbxassetid://5162002130", -- Mesh ID del cuchillo
+	textureId = "rbxassetid://5162002306", -- Textura del cuchillo
+}
+
+-- Función para aplicar la skin al ViewModel de la cámara
+local function applyKnifeSkin()
+	if not skinSettings.enabled then return end
+	
+	-- Busca el modelo del arma/brazos dentro de la cámara (ViewModel)
+	local viewModel = camera:FindFirstChildOfClass("Model") or camera:FindFirstChild("ViewModel")
+	
+	if viewModel then
+		-- Busca el cuchillo por defecto en tus manos
+		for _, part in ipairs(viewModel:GetDescendants()) do
+			if part:IsA("BasePart") and (part.Name:lower():find("knife") or part.Name:lower():find("cuchillo") or part.Name == "Handle") then
+				
+				-- Hacemos invisible el cuchillo original
+				part.Transparency = 1
+				
+				-- Si no le hemos creado el cuchillo visual encima, se lo creamos
+				if not part:FindFirstChild("VisualKnife") then
+					local fakeKnife = Instance.new("SpecialMesh")
+					fakeKnife.Name = "VisualKnife"
+					fakeKnife.MeshType = Enum.MeshType.FileMesh
+					fakeKnife.MeshId = skinSettings.meshId
+					fakeKnife.TextureId = skinSettings.textureId
+					fakeKnife.Scale = Vector3.new(0.03, 0.03, 0.03) -- Ajustar si se ve muy grande/pequeño
+					fakeKnife.Parent = part
+					
+					-- Hacemos visible solo el Mesh nuevo
+					part.Transparency = 0
+					part.Material = Enum.Material.SmoothPlastic
+				end
+			end
+		end
+	end
+end
+
+-- Ejecutar la verificación en tiempo real
+RunService.RenderStepped:Connect(function()
+	pcall(applyKnifeSkin)
+end)
