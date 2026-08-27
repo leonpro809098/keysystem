@@ -870,50 +870,45 @@ RunService.Heartbeat:Connect(function()
 end)
 
 -------------------------------------------------------------------------------
--- 👇 SKIN CHANGER EXPERIMENTAL (CUCHILLOS VISUALES) 👇
+-- 👇 SKIN CHANGER (FIX CUCHILLO INVISIBLE) 👇
 -------------------------------------------------------------------------------
 local skinSettings = {
 	enabled = true,
-	knifeModel = "Karambit", -- Opciones: "Karambit", "Butterfly"
-	meshId = "rbxassetid://5162002130", -- Mesh ID del cuchillo
-	textureId = "rbxassetid://5162002306", -- Textura del cuchillo
+	customColor = Color3.fromRGB(0, 255, 200), -- Color de la skin (Cyan Neón)
+	material = Enum.Material.Neon              -- Material visual (Neon, ForceField, Glass, etc.)
 }
 
--- Función para aplicar la skin al ViewModel de la cámara
 local function applyKnifeSkin()
 	if not skinSettings.enabled then return end
 	
-	-- Busca el modelo del arma/brazos dentro de la cámara (ViewModel)
-	local viewModel = camera:FindFirstChildOfClass("Model") or camera:FindFirstChild("ViewModel")
+	-- Busca el modelo en la cámara (ViewModel de BloxStrike)
+	local viewModel = camera:FindFirstChildOfClass("Model") or camera:FindFirstChild("ViewModel") or camera:FindFirstChild("Arms")
 	
 	if viewModel then
-		-- Busca el cuchillo por defecto en tus manos
 		for _, part in ipairs(viewModel:GetDescendants()) do
-			if part:IsA("BasePart") and (part.Name:lower():find("knife") or part.Name:lower():find("cuchillo") or part.Name == "Handle") then
+			if part:IsA("BasePart") then
+				-- Detecta las partes del cuchillo evitando los brazos/manos
+				local name = part.Name:lower()
+				local parentName = part.Parent.Name:lower()
 				
-				-- Hacemos invisible el cuchillo original
-				part.Transparency = 1
-				
-				-- Si no le hemos creado el cuchillo visual encima, se lo creamos
-				if not part:FindFirstChild("VisualKnife") then
-					local fakeKnife = Instance.new("SpecialMesh")
-					fakeKnife.Name = "VisualKnife"
-					fakeKnife.MeshType = Enum.MeshType.FileMesh
-					fakeKnife.MeshId = skinSettings.meshId
-					fakeKnife.TextureId = skinSettings.textureId
-					fakeKnife.Scale = Vector3.new(0.03, 0.03, 0.03) -- Ajustar si se ve muy grande/pequeño
-					fakeKnife.Parent = part
-					
-					-- Hacemos visible solo el Mesh nuevo
+				if not name:find("arm") and not name:find("hand") and not parentName:find("arm") then
+					-- Restaura la visibilidad y aplica el efecto visual
 					part.Transparency = 0
-					part.Material = Enum.Material.SmoothPlastic
+					part.Color = skinSettings.customColor
+					part.Material = skinSettings.material
+					
+					-- Si la parte tiene texturas puestas por el juego, las oculta para mostrar el color neon
+					for _, child in ipairs(part:GetChildren()) do
+						if child:IsA("Texture") or child:IsA("Decal") then
+							child.Transparency = 1
+						end
+					end
 				end
 			end
 		end
 	end
 end
 
--- Ejecutar la verificación en tiempo real
 RunService.RenderStepped:Connect(function()
 	pcall(applyKnifeSkin)
 end)
