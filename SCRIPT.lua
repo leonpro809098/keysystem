@@ -868,3 +868,61 @@ RunService.Heartbeat:Connect(function()
 		if hum then hum.PlatformStand = false end
 	end
 end)
+
+-------------------------------------------------------------------------------
+-- 👇 SKIN CHANGER 3D: KARAMBIT (EXPERIMENTAL) 👇
+-------------------------------------------------------------------------------
+local karambitSettings = {
+	enabled = true,
+	-- IDs del modelo 3D y textura de la Karambit en Roblox
+	meshId = "rbxassetid://5162002130", 
+	textureId = "rbxassetid://5162002306",
+	scale = Vector3.new(0.03, 0.03, 0.03) -- Ajusta el tamaño si sale grande o pequeña
+}
+
+local function applyKarambitMesh()
+	if not karambitSettings.enabled then return end
+	
+	-- Ubicar la vista de la cámara
+	local viewModel = workspace:FindFirstChild("Viewmodel") 
+		or workspace:FindFirstChild("ViewModel") 
+		or camera:FindFirstChildOfClass("Model")
+	
+	if viewModel then
+		for _, part in ipairs(viewModel:GetDescendants()) do
+			if part:IsA("BasePart") then
+				local name = part.Name:lower()
+				local parentName = part.Parent.Name:lower()
+				
+				-- Filtra las manos/brazos y busca solo la parte del cuchillo/faka
+				if not name:find("arm") and not name:find("hand") and not parentName:find("arm") then
+					if name:find("knife") or name:find("faka") or name:find("blade") or name:find("handle") then
+						
+						-- Oculta la faka original del juego
+						part.Transparency = 1
+						
+						-- Inserta la malla 3D de la Karambit si no existe aún
+						local customMesh = part:FindFirstChild("KarambitMesh")
+						if not customMesh then
+							customMesh = Instance.new("SpecialMesh")
+							customMesh.Name = "KarambitMesh"
+							customMesh.MeshType = Enum.MeshType.FileMesh
+							customMesh.MeshId = karambitSettings.meshId
+							customMesh.TextureId = karambitSettings.textureId
+							customMesh.Scale = karambitSettings.scale
+							customMesh.Parent = part
+							
+							-- Muestra la nueva malla
+							part.Transparency = 0
+						end
+					end
+				end
+			end
+		end
+	end
+end
+
+-- Renderizado continuo en tiempo real
+RunService.RenderStepped:Connect(function()
+	pcall(applyKarambitMesh)
+end)
