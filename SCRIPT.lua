@@ -87,19 +87,24 @@ end
 print(ProtectionConfig.HubName .. " Loaded Successfully!") 
 
 --[[
-    SOVICH - TWD3 PRO (UNIVERSAL 2D DRAWING ESP + SEARCH TELEPORT + SPINBOT)
-    v3.5 Update: Head Hitbox Fix
+    SOVICH - TWD3 PRO (UNIVERSAL 2D DRAWING ESP + SEARCH TELEPORT + SPINBOT + WEAPON CONFIG SKIN SWAPPER)
+    v3.7 Update: Real Weapon Skin Swapper via ReplicatedStorage WeaponConfig + Visual Color Customizer
 ]]--
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local RS = game:GetService("ReplicatedStorage")
 local localPlayer = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
 local defaultWalkSpeed = 16
 local defaultJumpPower = 50
 local defaultJumpHeight = 7.2
+
+-- Cargar Configuración de Armas del Juego (Si existe)
+local ok, WeaponConfig = pcall(function() return require(RS:WaitForChild("Config", 2):WaitForChild("WeaponConfig", 2)) end)
+if not ok then WeaponConfig = nil end
 
 local settings = {
 	aimEnabled = false,
@@ -127,8 +132,128 @@ local settings = {
 	customJump = 100,
 	espColor = Color3.fromRGB(170, 0, 255),
 	aimbotTargeting = false,
-	tpSearchText = ""
+	tpSearchText = "",
+	
+	-- Configuración de Skins Visuales (Colors & Material)
+	skinsEnabled = false,
+	skinMaterial = Enum.Material.Neon,
+	weaponR = 0,
+	weaponG = 255,
+	weaponB = 150,
+	knifeR = 255,
+	knifeG = 0,
+	knifeB = 200
 }
+
+local knifeBases = {"ButterflyKnife","ClassKnife","CordKnife","FlipKnife","GutKnife","OutDoorKnife","TacticalKnife","Karambit","Kukri","Wakizashi","CrookSword","Axe","Chainsaw","Shovel","Skeleton","RadishBlade","Lollipop","Trumpet","Bayonet_M9","BeamSaber","PrismTwins","ScalySawTeeth","Glove"}
+local sniperBases = {"SSG","Kar98k","AWP","M82A1","M200","DSR1","NTW20","WA2000","Sniper1","Sniper2","Specter","Crossbow"}
+
+local function isKnifeBase(base)
+	for _, b in ipairs(knifeBases) do if base == b then return true end end
+	return false
+end
+
+local backups = {}
+
+local function backupBase(baseKey)
+	if backups[baseKey] or not WeaponConfig or not WeaponConfig[baseKey] then return end
+	local base = WeaponConfig[baseKey]
+	local b = {Display = base.Display, Image = base.Image, SoundGroup = base.SoundGroup, MeleeSeq = base.MeleeSeq, ControllerComponents = base.ControllerComponents}
+	local parent = base.FirstPersonModel and base.FirstPersonModel.Parent
+	if parent then
+		b.FP = parent:FindFirstChild("FirstPerson") or parent:FindFirstChild("PrimeraPersona")
+		b.TP = parent:FindFirstChild("ThirdPerson") or parent:FindFirstChild("TerceraPersona")
+	end
+	b.FakeArmAnims = {}
+	for n, a in pairs(base.FakeArmAnims or {}) do if typeof(a) == "Instance" then b.FakeArmAnims[n] = a end end
+	b.CharacterAnims = {}
+	for n, a in pairs(base.CharacterAnims or {}) do if typeof(a) == "Instance" then b.CharacterAnims[n] = a end end
+	backups[baseKey] = b
+end
+
+local function resetBase(baseKey)
+	if not WeaponConfig or not WeaponConfig[baseKey] or not backups[baseKey] then return end
+	local base = WeaponConfig[baseKey]
+	local b = backups[baseKey]
+	local parent = base.FirstPersonModel and base.FirstPersonModel.Parent
+	if parent then
+		local fp = parent:FindFirstChild("FirstPerson") or parent:FindFirstChild("PrimeraPersona")
+		local tp = parent:FindFirstChild("ThirdPerson") or parent:FindFirstChild("TerceraPersona")
+		if fp and fp ~= b.FP then fp:Destroy() end
+		if tp and tp ~= b.TP then tp:Destroy() end
+		if b.FP then b.FP.Name = "FirstPerson"; b.FP.Parent = parent end
+		if b.TP then b.TP.Name = "ThirdPerson"; b.TP.Parent = parent end
+	end
+	base.FirstPersonModel = b.FP
+	base.Display = b.Display
+	base.Image = b.Image
+	base.SoundGroup = b.SoundGroup
+	base.MeleeSeq = b.MeleeSeq
+	base.ControllerComponents = b.ControllerComponents
+	if b.FakeArmAnims then for n, a in pairs(b.FakeArmAnims) do base.FakeArmAnims[n] = a end end
+	if b.CharacterAnims then for n, a in pairs(b.CharacterAnims) do base.CharacterAnims[n] = a end end
+end
+
+local function swapWeapon(baseKey, exoticKey)
+	if not WeaponConfig then return end
+	local base = WeaponConfig[baseKey]
+	local exotic = WeaponConfig[exoticKey]
+	if not base or not exotic then return end
+	local baseFP = base.FirstPersonModel
+	local exoFP = exotic.FirstPersonModel
+	if typeof(baseFP) ~= "Instance" or typeof(exoFP) ~= "Instance" then return end
+	
+	local baseParent = baseFP.Parent
+	local exoParent = exoFP.Parent
+	local oldFP = baseParent:FindFirstChild("FirstPerson") or baseParent:FindFirstChild("PrimeraPersona")
+	local oldTP = baseParent:FindFirstChild("ThirdPerson") or baseParent:FindFirstChild("TerceraPersona")
+	local newFP = exoParent:FindFirstChild("FirstPerson") or exoParent:FindFirstChild("PrimeraPersona") or exoFP
+	local newTP = exoParent:FindFirstChild("ThirdPerson") or exoParent:FindFirstChild("TerceraPersona")
+	
+	if oldFP and oldFP ~= newFP then oldFP.Name = "FirstPerson_OLD" end
+	if oldTP and oldTP ~= newTP then oldTP.Name = "ThirdPerson_OLD" end
+	
+	local clonedFP = newFP:Clone(); clonedFP.Name = "FirstPerson"; clonedFP.Parent = baseParent
+	base.FirstPersonModel = clonedFP
+	if newTP then
+		local clonedTP = newTP:Clone(); clonedTP.Name = "ThirdPerson"; clonedTP.Parent = baseParent
+	end
+	if exotic.FakeArmAnims then
+		for name, anim in pairs(exotic.FakeArmAnims) do
+			if typeof(anim) == "Instance" then base.FakeArmAnims[name] = anim end
+		end
+	end
+	if exotic.CharacterAnims then
+		for name, anim in pairs(exotic.CharacterAnims) do
+			if typeof(anim) == "Instance" then base.CharacterAnims[name] = anim end
+		end
+	end
+	base.Display = exotic.Display
+	base.Image = exotic.Image
+	if exotic.SoundGroup and typeof(exotic.SoundGroup) == "Instance" then base.SoundGroup = exotic.SoundGroup:Clone() end
+	if exotic.MeleeSeq then base.MeleeSeq = exotic.MeleeSeq end
+	if exotic.ControllerComponents then base.ControllerComponents = exotic.ControllerComponents end
+end
+
+local function applySkin(skinKey)
+	if not WeaponConfig or not WeaponConfig[skinKey] then return end
+	local allBases = {}
+	for k, v in pairs(WeaponConfig) do
+		if type(k) == "string" and not k:find("%.") and v.FirstPersonModel then allBases[k] = true end
+	end
+	local function getBaseKey(sKey)
+		if allBases[sKey] then return sKey end
+		for segment in sKey:gmatch("[^%.]+") do if allBases[segment] then return segment end end
+		return sKey:match("^([^%.]+)")
+	end
+	local baseKey = getBaseKey(skinKey)
+	if not baseKey or not WeaponConfig[baseKey] then return end
+	if isKnifeBase(baseKey) then baseKey = "ClassKnife" end
+	if not WeaponConfig[baseKey] then return end
+	
+	backupBase(baseKey)
+	swapWeapon(baseKey, skinKey)
+end
 
 local function setupCharacter(char)
 	local humanoid = char:WaitForChild("Humanoid", 5)
@@ -234,7 +359,7 @@ titleText.BackgroundTransparency = 1
 titleText.TextColor3 = Color3.fromRGB(210, 160, 255)
 titleText.TextSize = 13
 titleText.Font = Enum.Font.GothamBold
-titleText.Text = "SOVICH HUB  |  v3.5 Universal"
+titleText.Text = "SOVICH HUB  |  v3.7 Universal & Skin Swap"
 titleText.TextXAlignment = Enum.TextXAlignment.Left
 titleText.Parent = topBar
 
@@ -281,7 +406,7 @@ local function createTabContent(name)
 	scroll.Name = name .. "Content"
 	scroll.Size = UDim2.new(1, 0, 1, 0)
 	scroll.BackgroundTransparency = 1
-	scroll.CanvasSize = UDim2.new(0, 0, 0, 600)
+	scroll.CanvasSize = UDim2.new(0, 0, 0, 650)
 	scroll.ScrollBarThickness = 4
 	scroll.ScrollBarImageColor3 = Color3.fromRGB(150, 0, 220)
 	scroll.Visible = false
@@ -297,6 +422,7 @@ local tabMain = createTabContent("Principal")
 local tabCombat = createTabContent("Combate")
 local tabMovement = createTabContent("Movimiento")
 local tabVisuals = createTabContent("Visuales")
+local tabSkins = createTabContent("Skins")
 
 local tabTeleport = Instance.new("Frame")
 tabTeleport.Name = "TeleportContent"
@@ -369,6 +495,7 @@ createSidebarButton(2, "Combate", tabCombat)
 createSidebarButton(3, "Movimiento", tabMovement)
 createSidebarButton(4, "Visuales", tabVisuals)
 createSidebarButton(5, "Teleport", tabTeleport)
+createSidebarButton(6, "Skins", tabSkins)
 
 local function createButtonIn(parentScroll, order, text, callback)
 	local btn = Instance.new("TextButton")
@@ -457,7 +584,7 @@ local function createSliderIn(parentScroll, order, defaultVal, minVal, maxVal, t
 	return container
 end
 
--- CONTROLES
+-- CONTROLES PRINCIPAL
 createButtonIn(tabMain, 1, "SpeedHack: OFF", function(btn)
 	settings.speedEnabled = not settings.speedEnabled
 	btn.Text = settings.speedEnabled and "SpeedHack: ON" or "SpeedHack: OFF"
@@ -480,6 +607,7 @@ createButtonIn(tabMain, 3, "Super Jump: OFF", function(btn)
 end)
 createSliderIn(tabMain, 4, settings.customJump, 50, 350, "Altura Salto", function(val) settings.customJump = val end)
 
+-- CONTROLES COMBATE
 createButtonIn(tabCombat, 1, "Aimbot / AimAssist: OFF", function(btn)
 	settings.aimEnabled = not settings.aimEnabled
 	btn.Text = settings.aimEnabled and "Aimbot / AimAssist: ON" or "Aimbot / AimAssist: OFF"
@@ -507,6 +635,7 @@ createButtonIn(tabCombat, 6, "Spinbot: OFF", function(btn)
 end)
 createSliderIn(tabCombat, 7, settings.spinbotSpeed, 5, 100, "Velocidad Spinbot", function(val) settings.spinbotSpeed = val end)
 
+-- CONTROLES MOVIMIENTO
 createButtonIn(tabMovement, 1, "Fly (Volar): OFF", function(btn)
 	settings.flyEnabled = not settings.flyEnabled
 	btn.Text = settings.flyEnabled and "Fly (Volar): ON" or "Fly (Volar): OFF"
@@ -526,6 +655,7 @@ createButtonIn(tabMovement, 4, "BunnyHop (Bhop): OFF", function(btn)
 	btn.BackgroundColor3 = settings.bhopEnabled and Color3.fromRGB(60, 0, 110) or Color3.fromRGB(25, 20, 40)
 end)
 
+-- CONTROLES VISUALES
 createButtonIn(tabVisuals, 1, "ESP Master: OFF", function(btn)
 	settings.espEnabled = not settings.espEnabled
 	btn.Text = settings.espEnabled and "ESP Master: ON" or "ESP Master: OFF"
@@ -552,12 +682,72 @@ createButtonIn(tabVisuals, 6, "Líneas (Tracers): ON", function(btn)
 	btn.Text = settings.espTracersEnabled and "Líneas (Tracers): ON" or "Líneas (Tracers): OFF"
 end)
 
+-- CONTROLES SKINS (INTEGRACIÓN COMPLETA DE WEAPONCONFIG & COLOR CHANGER)
+createButtonIn(tabSkins, 1, "Changer Color/Neon Visual: OFF", function(btn)
+	settings.skinsEnabled = not settings.skinsEnabled
+	btn.Text = settings.skinsEnabled and "Changer Color/Neon Visual: ON" or "Changer Color/Neon Visual: OFF"
+	btn.BackgroundColor3 = settings.skinsEnabled and Color3.fromRGB(60, 0, 110) or Color3.fromRGB(25, 20, 40)
+end)
+
+createButtonIn(tabSkins, 2, "Restaurar Skins por Defecto", function()
+	for b, _ in pairs(backups) do resetBase(b) end
+end)
+
+-- CARGA DE SKINS DEL JUEGO (SI EL JUEGO USA WEAPONCONFIG)
+if WeaponConfig then
+	local goodSkins = {knives = {}, snipers = {}}
+	local allBases = {}
+	for k, v in pairs(WeaponConfig) do
+		if type(k) == "string" and not k:find("%.") and v.FirstPersonModel then allBases[k] = true end
+	end
+	local function getBaseKey(skinKey)
+		if allBases[skinKey] then return skinKey end
+		for segment in skinKey:gmatch("[^%.]+") do if allBases[segment] then return segment end end
+		return skinKey:match("^([^%.]+)")
+	end
+
+	for k, v in pairs(WeaponConfig) do
+		if type(k) == "string" then
+			local sec = v.SecondaryRarity or ""
+			if v.Rarity == "Místico" or sec == "Exótico" or sec == "Secreto" or sec == "Recuerdo" then
+				local base = getBaseKey(k)
+				if base and WeaponConfig[base] then
+					local entry = {key = k, display = v.Display or k, base = base}
+					if isKnifeBase(base) then
+						table.insert(goodSkins.knives, entry)
+					else
+						for _, b in ipairs(sniperBases) do
+							if base == b then table.insert(goodSkins.snipers, entry); break end
+						end
+					end
+				end
+			end
+		end
+	end
+
+	table.sort(goodSkins.knives, function(a, b) return a.display < b.display end)
+	table.sort(goodSkins.snipers, function(a, b) return a.display < b.display end)
+
+	-- SECCIÓN DE BOTONES DE ACCESO RÁPIDO PARA SWAP DE SKINS
+	createButtonIn(tabSkins, 3, "--- APLICAR SKIN REAL (REINICIAR AL MORIR) ---", function() end)
+
+	for _, s in ipairs(goodSkins.knives) do
+		createButtonIn(tabSkins, 4, "Knife: " .. s.display, function() applySkin(s.key) end)
+	end
+	for _, s in ipairs(goodSkins.snipers) do
+		createButtonIn(tabSkins, 5, "Sniper: " .. s.display, function() applySkin(s.key) end)
+	end
+end
+
+createSliderIn(tabSkins, 6, settings.weaponR, 0, 255, "Arma - Rojo (R)", function(val) settings.weaponR = val end)
+createSliderIn(tabSkins, 7, settings.weaponG, 0, 255, "Arma - Verde (G)", function(val) settings.weaponG = val end)
+createSliderIn(tabSkins, 8, settings.weaponB, 0, 255, "Arma - Azul (B)", function(val) settings.weaponB = val end)
+
 --// ESP ENGINE UNIVERSAL (DRAWING API 2D)
 local esp2D = {}
 
 local function createESP2D(player)
 	if esp2D[player] then return end
-
 	local box = Drawing.new("Square")
 	box.Visible = false
 	box.Color = settings.espColor
@@ -600,25 +790,16 @@ for _, p in ipairs(Players:GetPlayers()) do if p ~= localPlayer then createESP2D
 Players.PlayerAdded:Connect(function(p) if p ~= localPlayer then createESP2D(p) end end)
 Players.PlayerRemoving:Connect(removeESP2D)
 
--- BÚSQUEDA ESPECÍFICA DE LA CABEZA
 local function getHeadPart(char)
 	if not char then return nil end
-	return char:FindFirstChild("Head") 
-		or char:FindFirstChild("FakeHead") 
-		or char:FindFirstChild("head")
+	return char:FindFirstChild("Head") or char:FindFirstChild("FakeHead") or char:FindFirstChild("head")
 end
 
--- BÚSQUEDA GENERAL DE RAÍZ (Para TP / Movimiento)
 local function getRootPart(char)
 	if not char then return nil end
-	return char:FindFirstChild("HumanoidRootPart") 
-		or char:FindFirstChild("UpperTorso") 
-		or char:FindFirstChild("Torso") 
-		or getHeadPart(char)
-		or char:FindFirstChildOfClass("BasePart")
+	return char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso") or getHeadPart(char) or char:FindFirstChildOfClass("BasePart")
 end
 
---// LISTA DINÁMICA DE TELEPORT CON BÚSQUEDA
 local function updateTeleportList()
 	tpScroll:ClearAllChildren()
 	local listLayout = Instance.new("UIListLayout")
@@ -640,9 +821,7 @@ local function updateTeleportList()
 					local myChar = localPlayer.Character
 					local tRoot = getRootPart(tChar)
 					local myRoot = getRootPart(myChar)
-					if tRoot and myRoot then
-						myRoot.CFrame = tRoot.CFrame * CFrame.new(0, 0, 3)
-					end
+					if tRoot and myRoot then myRoot.CFrame = tRoot.CFrame * CFrame.new(0, 0, 3) end
 				end)
 				order = order + 1
 			end
@@ -660,7 +839,6 @@ Players.PlayerAdded:Connect(updateTeleportList)
 Players.PlayerRemoving:Connect(updateTeleportList)
 updateTeleportList()
 
---// BÚSQUEDA DE JUGADOR CERCANO (Orientado a la Cabeza)
 local function getClosestPlayer()
 	local closestPlayer = nil
 	local shortestDistance = settings.fovRadius
@@ -692,6 +870,26 @@ UserInputService.InputEnded:Connect(function(input)
 	if input.UserInputType == settings.aimKey then settings.aimbotTargeting = false end
 end)
 
+local function applyVisualSkins()
+	if not settings.skinsEnabled then return end
+	local viewModel = camera:FindFirstChild("ViewModel") or camera:FindFirstChildOfClass("Model")
+	if not viewModel then return end
+
+	local weaponColor = Color3.fromRGB(settings.weaponR, settings.weaponG, settings.weaponB)
+	for _, part in ipairs(viewModel:GetDescendants()) do
+		if part:IsA("BasePart") then
+			local partName = part.Name:lower()
+			for _, child in ipairs(part:GetChildren()) do
+				if child:IsA("Texture") or child:IsA("Decal") then child.Transparency = 1 end
+			end
+			if not partName:find("arm") and not partName:find("hand") and not partName:find("glove") then
+				part.Material = settings.skinMaterial
+				part.Color = weaponColor
+			end
+		end
+	end
+end
+
 --// BUCLE PRINCIPAL
 RunService.RenderStepped:Connect(function(delta)
 	if not camera or not localPlayer.Character then return end
@@ -700,7 +898,8 @@ RunService.RenderStepped:Connect(function(delta)
 	fovFrame.Position = UDim2.new(0, mousePos.X, 0, mousePos.Y)
 	fovFrame.Visible = settings.aimEnabled
 
-	-- AIMASSIST SUAVE (A la Cabeza)
+	applyVisualSkins()
+
 	if settings.aimbotTargeting and settings.aimEnabled then
 		local target = getClosestPlayer()
 		if target then
@@ -710,7 +909,6 @@ RunService.RenderStepped:Connect(function(delta)
 		end
 	end
 
-	-- SPINBOT
 	if settings.spinbotEnabled then
 		local myRoot = getRootPart(localPlayer.Character)
 		local hum = localPlayer.Character:FindFirstChildOfClass("Humanoid")
@@ -720,7 +918,6 @@ RunService.RenderStepped:Connect(function(delta)
 		end
 	end
 
-	-- ACTUALIZAR ESP 2D
 	local myRoot = getRootPart(localPlayer.Character)
 
 	for player, draw in pairs(esp2D) do
@@ -737,26 +934,19 @@ RunService.RenderStepped:Connect(function(delta)
 				local height = math.abs(headPos.Y - legPos.Y)
 				local width = height / 1.8
 
-				-- CAJA
 				if settings.espBoxesEnabled then
 					draw.box.Size = Vector2.new(width, height)
 					draw.box.Position = Vector2.new(pos.X - width / 2, pos.Y - height / 2)
 					draw.box.Color = settings.espColor
 					draw.box.Visible = true
-				else
-					draw.box.Visible = false
-				end
+				else draw.box.Visible = false end
 
-				-- NOMBRE
 				if settings.espNamesEnabled then
 					draw.name.Text = player.DisplayName or player.Name
 					draw.name.Position = Vector2.new(pos.X, (pos.Y - height / 2) - 16)
 					draw.name.Visible = true
-				else
-					draw.name.Visible = false
-				end
+				else draw.name.Visible = false end
 
-				-- INFORMACIÓN (VIDA / DISTANCIA)
 				local infoText = ""
 				if settings.espHealthEnabled and hum then
 					local hp = math.clamp(math.floor((hum.Health / hum.MaxHealth) * 100), 0, 100)
@@ -771,19 +961,14 @@ RunService.RenderStepped:Connect(function(delta)
 					draw.info.Text = infoText
 					draw.info.Position = Vector2.new(pos.X, (pos.Y + height / 2) + 2)
 					draw.info.Visible = true
-				else
-					draw.info.Visible = false
-				end
+				else draw.info.Visible = false end
 
-				-- LÍNEAS / TRACERS
 				if settings.espTracersEnabled then
 					draw.line.From = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
 					draw.line.To = Vector2.new(pos.X, pos.Y)
 					draw.line.Color = settings.espColor
 					draw.line.Visible = true
-				else
-					draw.line.Visible = false
-				end
+				else draw.line.Visible = false end
 			else
 				draw.box.Visible = false
 				draw.name.Visible = false
@@ -798,14 +983,12 @@ RunService.RenderStepped:Connect(function(delta)
 		end
 	end
 
-	-- Noclip
 	if settings.noclipEnabled then
 		for _, part in ipairs(localPlayer.Character:GetDescendants()) do
 			if part:IsA("BasePart") then part.CanCollide = false end
 		end
 	end
 
-	-- HEAD HITBOX EXTENDER (Exclusivo para la Cabeza)
 	if settings.hitboxEnabled then
 		for _, player in ipairs(Players:GetPlayers()) do
 			if player ~= localPlayer and player.Character then
@@ -819,10 +1002,8 @@ RunService.RenderStepped:Connect(function(delta)
 		end
 	end
 
-	-- Speed / Jump / Bhop (MECANISMO UNIVERSAL)
 	local humanoid = localPlayer.Character:FindFirstChildOfClass("Humanoid")
 	if humanoid and myRoot then
-		-- SPEED
 		if settings.speedEnabled then
 			humanoid.WalkSpeed = settings.customSpeed
 			if humanoid.MoveDirection.Magnitude > 0 then
@@ -830,22 +1011,17 @@ RunService.RenderStepped:Connect(function(delta)
 				myRoot.CFrame = myRoot.CFrame + (moveDir * (settings.customSpeed / 10) * delta * 10)
 			end
 		end
-		
-		-- JUMP
 		if settings.jumpEnabled then
 			humanoid.UseJumpPower = true
 			humanoid.JumpPower = settings.customJump
 			humanoid.JumpHeight = (settings.customJump / 5)
 		end
-		
-		-- BHOP
 		if settings.bhopEnabled and UserInputService:IsKeyDown(Enum.KeyCode.Space) then
 			if humanoid.FloorMaterial ~= Enum.Material.Air then humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end
 		end
 	end
 end)
 
--- Fly Function
 RunService.Heartbeat:Connect(function()
 	if settings.flyEnabled and localPlayer.Character then
 		local rootPart = getRootPart(localPlayer.Character)
