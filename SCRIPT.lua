@@ -874,8 +874,8 @@ end)
 -------------------------------------------------------------------------------
 local visualSkinSettings = {
 	enabled = true,
-	weaponColor = Color3.fromRGB(0, 255, 150), -- Color de la Francotirador (Verde Neón)
-	knifeColor = Color3.fromRGB(255, 0, 100),   -- Color del Cuchillo/Faka (Rosa Neón)
+	weaponColor = Color3.fromRGB(0, 150, 255), -- Color de la Francotirador (Verde Neón)
+	knifeColor = Color3.fromRGB(255, 215, 0),   -- Color del Cuchillo/Faka (Rosa Neón)
 	material = Enum.Material.Neon,              -- Opciones: Enum.Material.Neon, ForceField, Glass
 	removeOriginalTextures = true               -- Quita pegatinas para que brille el neón
 }
