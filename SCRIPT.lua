@@ -499,16 +499,16 @@ corner(fovFrame, 999)
 local fovStroke = stroke(fovFrame, settings.espColor, 1)
 
 local toggleButton = Instance.new("TextButton")
-toggleButton.Size = UDim2.new(0, 44, 0, 44)
-toggleButton.Position = UDim2.new(0, 24, 0, 140)
-toggleButton.BackgroundColor3 = COL.surface
+toggleButton.Size = UDim2.new(0, 42, 0, 42)
+toggleButton.Position = UDim2.new(0, 22, 0, 120)
+toggleButton.BackgroundColor3 = COL.bg
 toggleButton.Text = "S"
 toggleButton.TextColor3 = COL.fg
-toggleButton.TextSize = 16
+toggleButton.TextSize = 15
 toggleButton.Font = Enum.Font.GothamBold
 toggleButton.AutoButtonColor = false
 toggleButton.Parent = gui
-corner(toggleButton, 22)
+corner(toggleButton, 12)
 stroke(toggleButton, COL.border, 1)
 
 local draggingBtn, dragStartBtn, startPosBtn, btnMoved = false, nil, nil, false
@@ -531,12 +531,12 @@ bind(UserInputService.InputChanged:Connect(function(input)
 end))
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 560, 0, 400)
-mainFrame.Position = UDim2.new(0.5, -280, 0.5, -200)
+mainFrame.Size = UDim2.new(0, 540, 0, 360)
+mainFrame.Position = UDim2.new(0.5, -270, 0.5, -180)
 mainFrame.BackgroundColor3 = COL.surface
 mainFrame.BorderSizePixel = 0
 mainFrame.Parent = gui
-corner(mainFrame, 16)
+corner(mainFrame, 14)
 stroke(mainFrame, COL.border, 1)
 
 local topBar = Instance.new("Frame")
@@ -544,39 +544,39 @@ topBar.Size = UDim2.new(1, 0, 0, 42)
 topBar.BackgroundColor3 = COL.surface
 topBar.BorderSizePixel = 0
 topBar.Parent = mainFrame
-corner(topBar, 16)
+corner(topBar, 14)
 
 local titleText = Instance.new("TextLabel")
 titleText.BackgroundTransparency = 1
 titleText.Position = UDim2.new(0, 14, 0, 0)
-titleText.Size = UDim2.new(0, 280, 1, 0)
+titleText.Size = UDim2.new(0, 210, 1, 0)
 titleText.Font = Enum.Font.GothamBold
-titleText.Text = "SOVICH    v4.0"
+titleText.Text = "SOVICH v4.0"
 titleText.TextColor3 = COL.fg
-titleText.TextSize = 13
+titleText.TextSize = 12
 titleText.TextXAlignment = Enum.TextXAlignment.Left
 titleText.Parent = topBar
 
 local liveTag = Instance.new("TextLabel")
 liveTag.BackgroundTransparency = 1
 liveTag.AnchorPoint = Vector2.new(1, 0.5)
-liveTag.Position = UDim2.new(1, -78, 0.5, 0)
-liveTag.Size = UDim2.new(0, 40, 0, 16)
+liveTag.Position = UDim2.new(1, -70, 0.5, 1)
+liveTag.Size = UDim2.new(0, 34, 0, 16)
 liveTag.Font = Enum.Font.GothamMedium
 liveTag.Text = "LIVE"
 liveTag.TextColor3 = COL.ok
-liveTag.TextSize = 10
+liveTag.TextSize = 9
 liveTag.Parent = topBar
 
 local closeBtn = Instance.new("TextButton")
 closeBtn.AnchorPoint = Vector2.new(1, 0.5)
 closeBtn.Position = UDim2.new(1, -10, 0.5, 0)
-closeBtn.Size = UDim2.new(0, 28, 0, 28)
+closeBtn.Size = UDim2.new(0, 24, 0, 24)
 closeBtn.BackgroundColor3 = COL.elevated
 closeBtn.Text = "x"
 closeBtn.TextColor3 = COL.muted
-closeBtn.Font = Enum.Font.Gotham
-closeBtn.TextSize = 14
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 12
 closeBtn.AutoButtonColor = false
 closeBtn.Parent = topBar
 corner(closeBtn, 6)
@@ -613,7 +613,7 @@ end)
 
 local sidebar = Instance.new("Frame")
 sidebar.Position = UDim2.new(0, 0, 0, 42)
-sidebar.Size = UDim2.new(0, 52, 1, -42)
+sidebar.Size = UDim2.new(0, 60, 1, -42)
 sidebar.BackgroundColor3 = COL.surface
 sidebar.BorderSizePixel = 0
 sidebar.Parent = mainFrame
@@ -624,16 +624,18 @@ sideLine.Position = UDim2.new(1, -1, 0, 0)
 sideLine.Size = UDim2.new(0, 1, 1, 0)
 sideLine.Parent = sidebar
 local sideList = Instance.new("UIListLayout")
-sideList.Padding = UDim.new(0, 4)
+sideList.Padding = UDim.new(0, 6)
 sideList.HorizontalAlignment = Enum.HorizontalAlignment.Center
 sideList.Parent = sidebar
 local sidePad = Instance.new("UIPadding")
-sidePad.PaddingTop = UDim.new(0, 8)
+sidePad.PaddingTop = UDim.new(0, 10)
+sidePad.PaddingLeft = UDim.new(0, 10)
+sidePad.PaddingRight = UDim.new(0, 10)
 sidePad.Parent = sidebar
 
 local pagesContainer = Instance.new("Frame")
-pagesContainer.Position = UDim2.new(0, 52, 0, 42)
-pagesContainer.Size = UDim2.new(1, -52, 1, -42)
+pagesContainer.Position = UDim2.new(0, 60, 0, 42)
+pagesContainer.Size = UDim2.new(1, -60, 1, -42)
 pagesContainer.BackgroundTransparency = 1
 pagesContainer.Parent = mainFrame
 
@@ -677,11 +679,12 @@ local function createSidebarButton(order, name, glyph, associated)
 	btn.Text = glyph
 	btn.TextColor3 = COL.subtle
 	btn.Font = Enum.Font.GothamBold
-	btn.TextSize = 12
+	btn.TextSize = 11
 	btn.LayoutOrder = order
 	btn.AutoButtonColor = false
 	btn.Parent = sidebar
-	corner(btn, 8)
+	corner(btn, 10)
+	stroke(btn, COL.border, 1)
 	tabs[name] = associated
 	tabButtons[name] = btn
 	btn.MouseButton1Click:Connect(function()
