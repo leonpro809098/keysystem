@@ -42,7 +42,7 @@ end
 
 print(ProtectionConfig.HubName .. " Loaded Successfully!") 
 
--[[
+--[[
     SOVICH HUB  v4.0
     Universal overlay · TWD3
     UI profesional, inf jump, restore de hitbox/noclip/fly, unload limpio
