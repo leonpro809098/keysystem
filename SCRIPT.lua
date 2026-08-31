@@ -42,6 +42,7 @@ end
 
 print(ProtectionConfig.HubName .. " Loaded Successfully!") 
 
+
 --[[
     SOVICH HUB  v4.0
     Universal overlay · TWD3
@@ -530,146 +531,59 @@ bind(UserInputService.InputChanged:Connect(function(input)
 	end
 end))
 
-local BASE_W, BASE_H = 580, 450
-local HEADER_H = 80
-local uiScaleValue = 1
-local minimized = false
-
 local mainFrame = Instance.new("Frame")
-mainFrame.Name = "Main"
-mainFrame.Size = UDim2.new(0, BASE_W, 0, BASE_H)
-mainFrame.Position = UDim2.new(0.5, -BASE_W / 2, 0.5, -BASE_H / 2)
+mainFrame.Size = UDim2.new(0, 560, 0, 400)
+mainFrame.Position = UDim2.new(0.5, -280, 0.5, -200)
 mainFrame.BackgroundColor3 = COL.surface
 mainFrame.BorderSizePixel = 0
-mainFrame.ClipsDescendants = true
 mainFrame.Parent = gui
-corner(mainFrame, 14)
+corner(mainFrame, 16)
 stroke(mainFrame, COL.border, 1)
 
-local uiScale = Instance.new("UIScale")
-uiScale.Scale = 1
-uiScale.Parent = mainFrame
-
-local header = Instance.new("Frame")
-header.Name = "Header"
-header.Size = UDim2.new(1, 0, 0, HEADER_H)
-header.BackgroundColor3 = Color3.fromRGB(18, 20, 26)
-header.BorderSizePixel = 0
-header.ZIndex = 20
-header.Parent = mainFrame
-
-local headerBottom = Instance.new("Frame")
-headerBottom.BackgroundColor3 = COL.border
-headerBottom.BorderSizePixel = 0
-headerBottom.Position = UDim2.new(0, 0, 1, -1)
-headerBottom.Size = UDim2.new(1, 0, 0, 1)
-headerBottom.ZIndex = 21
-headerBottom.Parent = header
-
 local topBar = Instance.new("Frame")
-topBar.Name = "TopBar"
-topBar.Size = UDim2.new(1, 0, 0, 40)
-topBar.BackgroundTransparency = 1
-topBar.ZIndex = 21
-topBar.Parent = header
+topBar.Size = UDim2.new(1, 0, 0, 42)
+topBar.BackgroundColor3 = COL.surface
+topBar.BorderSizePixel = 0
+topBar.Parent = mainFrame
+corner(topBar, 16)
 
 local titleText = Instance.new("TextLabel")
 titleText.BackgroundTransparency = 1
 titleText.Position = UDim2.new(0, 14, 0, 0)
-titleText.Size = UDim2.new(0, 180, 1, 0)
+titleText.Size = UDim2.new(0, 280, 1, 0)
 titleText.Font = Enum.Font.GothamBold
-titleText.Text = "SOVICH  v4.0"
-titleText.TextColor3 = Color3.fromRGB(240, 242, 245)
+titleText.Text = "SOVICH    v4.0"
+titleText.TextColor3 = COL.fg
 titleText.TextSize = 13
 titleText.TextXAlignment = Enum.TextXAlignment.Left
-titleText.ZIndex = 22
 titleText.Parent = topBar
 
 local liveTag = Instance.new("TextLabel")
 liveTag.BackgroundTransparency = 1
 liveTag.AnchorPoint = Vector2.new(1, 0.5)
-liveTag.Position = UDim2.new(1, -150, 0.5, 0)
-liveTag.Size = UDim2.new(0, 36, 0, 16)
+liveTag.Position = UDim2.new(1, -78, 0.5, 0)
+liveTag.Size = UDim2.new(0, 40, 0, 16)
 liveTag.Font = Enum.Font.GothamMedium
 liveTag.Text = "LIVE"
 liveTag.TextColor3 = COL.ok
 liveTag.TextSize = 10
-liveTag.ZIndex = 22
 liveTag.Parent = topBar
 
-local blockDrag = false
-local function makeTopBtn(text, offsetX)
-	local b = Instance.new("TextButton")
-	b.AnchorPoint = Vector2.new(1, 0.5)
-	b.Position = UDim2.new(1, offsetX, 0.5, 0)
-	b.Size = UDim2.new(0, 28, 0, 28)
-	b.BackgroundColor3 = Color3.fromRGB(10, 12, 16)
-	b.Text = text
-	b.TextColor3 = Color3.fromRGB(180, 186, 196)
-	b.Font = Enum.Font.GothamBold
-	b.TextSize = 14
-	b.AutoButtonColor = false
-	b.ZIndex = 22
-	b.Parent = topBar
-	corner(b, 6)
-	stroke(b, COL.border, 1)
-	b.MouseButton1Down:Connect(function()
-		blockDrag = true
-	end)
-	b.MouseButton1Up:Connect(function()
-		blockDrag = false
-	end)
-	return b
-end
-
-local closeBtn = makeTopBtn("×", -8)
-local minBtn = makeTopBtn("–", -40)
-local scaleUpBtn = makeTopBtn("+", -72)
-local scaleDownBtn = makeTopBtn("−", -104)
-
-local tabBar = Instance.new("Frame")
-tabBar.Name = "TabBar"
-tabBar.Position = UDim2.new(0, 0, 0, 40)
-tabBar.Size = UDim2.new(1, 0, 0, 40)
-tabBar.BackgroundTransparency = 1
-tabBar.ZIndex = 21
-tabBar.Parent = header
-
-local function applyWindowSize()
-	if minimized then
-		mainFrame.Size = UDim2.new(0, BASE_W, 0, 40)
-		tabBar.Visible = false
-		header.Size = UDim2.new(1, 0, 0, 40)
-	else
-		mainFrame.Size = UDim2.new(0, BASE_W, 0, BASE_H)
-		tabBar.Visible = true
-		header.Size = UDim2.new(1, 0, 0, HEADER_H)
-	end
-	uiScale.Scale = uiScaleValue
-end
-
-local bodyFrame = Instance.new("Frame")
-bodyFrame.Name = "Body"
-bodyFrame.Position = UDim2.new(0, 0, 0, HEADER_H)
-bodyFrame.Size = UDim2.new(1, 0, 1, -HEADER_H)
-bodyFrame.BackgroundColor3 = COL.surface
-bodyFrame.BorderSizePixel = 0
-bodyFrame.ClipsDescendants = true
-bodyFrame.Parent = mainFrame
-
-local pagesContainer = Instance.new("Frame")
-pagesContainer.Name = "Pages"
-pagesContainer.Size = UDim2.new(1, 0, 1, 0)
-pagesContainer.BackgroundTransparency = 1
-pagesContainer.BorderSizePixel = 0
-pagesContainer.ClipsDescendants = true
-pagesContainer.Parent = bodyFrame
+local closeBtn = Instance.new("TextButton")
+closeBtn.AnchorPoint = Vector2.new(1, 0.5)
+closeBtn.Position = UDim2.new(1, -10, 0.5, 0)
+closeBtn.Size = UDim2.new(0, 28, 0, 28)
+closeBtn.BackgroundColor3 = COL.elevated
+closeBtn.Text = "x"
+closeBtn.TextColor3 = COL.muted
+closeBtn.Font = Enum.Font.Gotham
+closeBtn.TextSize = 14
+closeBtn.AutoButtonColor = false
+closeBtn.Parent = topBar
+corner(closeBtn, 6)
 
 local draggingMain, dragStartMain, startPosMain = false, nil, nil
 bind(topBar.InputBegan:Connect(function(input)
-	if blockDrag then
-		return
-	end
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 		draggingMain = true
 		dragStartMain = input.Position
@@ -685,7 +599,6 @@ end))
 bind(UserInputService.InputEnded:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 		draggingMain = false
-		blockDrag = false
 		if draggingBtn then
 			draggingBtn = false
 			if not btnMoved then
@@ -699,24 +612,31 @@ closeBtn.MouseButton1Click:Connect(function()
 	mainFrame.Visible = false
 end)
 
-minBtn.MouseButton1Click:Connect(function()
-	minimized = not minimized
-	bodyFrame.Visible = not minimized
-	minBtn.Text = minimized and "□" or "–"
-	applyWindowSize()
-end)
+local sidebar = Instance.new("Frame")
+sidebar.Position = UDim2.new(0, 0, 0, 42)
+sidebar.Size = UDim2.new(0, 52, 1, -42)
+sidebar.BackgroundColor3 = COL.surface
+sidebar.BorderSizePixel = 0
+sidebar.Parent = mainFrame
+local sideLine = Instance.new("Frame")
+sideLine.BackgroundColor3 = COL.border
+sideLine.BorderSizePixel = 0
+sideLine.Position = UDim2.new(1, -1, 0, 0)
+sideLine.Size = UDim2.new(0, 1, 1, 0)
+sideLine.Parent = sidebar
+local sideList = Instance.new("UIListLayout")
+sideList.Padding = UDim.new(0, 4)
+sideList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+sideList.Parent = sidebar
+local sidePad = Instance.new("UIPadding")
+sidePad.PaddingTop = UDim.new(0, 8)
+sidePad.Parent = sidebar
 
-scaleUpBtn.MouseButton1Click:Connect(function()
-	uiScaleValue = math.clamp(uiScaleValue + 0.1, 0.7, 1.6)
-	applyWindowSize()
-	notify(string.format("Escala: %d%%", math.floor(uiScaleValue * 100 + 0.5)))
-end)
-
-scaleDownBtn.MouseButton1Click:Connect(function()
-	uiScaleValue = math.clamp(uiScaleValue - 0.1, 0.7, 1.6)
-	applyWindowSize()
-	notify(string.format("Escala: %d%%", math.floor(uiScaleValue * 100 + 0.5)))
-end)
+local pagesContainer = Instance.new("Frame")
+pagesContainer.Position = UDim2.new(0, 52, 0, 42)
+pagesContainer.Size = UDim2.new(1, -52, 1, -42)
+pagesContainer.BackgroundTransparency = 1
+pagesContainer.Parent = mainFrame
 
 local tabs, currentTab, tabButtons = {}, nil, {}
 
@@ -746,46 +666,31 @@ local function switchTab(name)
 	end
 	currentTab = name
 	for n, btn in pairs(tabButtons) do
-		local on = n == name
-		btn.TextColor3 = on and Color3.fromRGB(10, 12, 16) or Color3.fromRGB(230, 234, 240)
-		btn.BackgroundColor3 = on and Color3.fromRGB(220, 225, 235) or Color3.fromRGB(28, 32, 40)
+		btn.TextColor3 = n == name and COL.fg or COL.subtle
+		btn.BackgroundColor3 = n == name and COL.elevated or COL.surface
 	end
 end
 
-local TAB_LABELS = {
-	{ "Principal", "Inicio" },
-	{ "Combate", "Combate" },
-	{ "Movimiento", "Mover" },
-	{ "Visuales", "Visual" },
-	{ "Teleport", "TP" },
-	{ "Skins", "Skins" },
-	{ "Ajustes", "Ajustes" },
-}
-
-local function createTabButton(order, name, label, associated)
+local function createSidebarButton(order, name, glyph, associated)
 	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0, 74, 0, 28)
-	btn.Position = UDim2.new(0, 10 + (order - 1) * 79, 0.5, -14)
-	btn.BackgroundColor3 = Color3.fromRGB(28, 32, 40)
-	btn.Text = label
-	btn.TextColor3 = Color3.fromRGB(230, 234, 240)
+	btn.Size = UDim2.new(0, 36, 0, 36)
+	btn.BackgroundColor3 = COL.surface
+	btn.Text = glyph
+	btn.TextColor3 = COL.subtle
 	btn.Font = Enum.Font.GothamBold
-	btn.TextSize = 11
+	btn.TextSize = 12
+	btn.LayoutOrder = order
 	btn.AutoButtonColor = false
-	btn.ZIndex = 22
-	btn.Parent = tabBar
-	corner(btn, 7)
+	btn.Parent = sidebar
+	corner(btn, 8)
 	tabs[name] = associated
 	tabButtons[name] = btn
 	btn.MouseButton1Click:Connect(function()
-		if minimized then
-			minimized = false
-			bodyFrame.Visible = true
-			minBtn.Text = "–"
-			applyWindowSize()
-		end
 		switchTab(name)
 	end)
+	if not currentTab then
+		switchTab(name)
+	end
 	return btn
 end
 
@@ -797,20 +702,13 @@ local tabTeleport = createTabContent("Teleport")
 local tabSkins = createTabContent("Skins")
 local tabConfig = createTabContent("Ajustes")
 
-local tabContents = {
-	Principal = tabMain,
-	Combate = tabCombat,
-	Movimiento = tabMovement,
-	Visuales = tabVisuals,
-	Teleport = tabTeleport,
-	Skins = tabSkins,
-	Ajustes = tabConfig,
-}
-
-for i, info in ipairs(TAB_LABELS) do
-	createTabButton(i, info[1], info[2], tabContents[info[1]])
-end
-switchTab("Principal")
+createSidebarButton(1, "Principal", "P", tabMain)
+createSidebarButton(2, "Combate", "C", tabCombat)
+createSidebarButton(3, "Movimiento", "M", tabMovement)
+createSidebarButton(4, "Visuales", "V", tabVisuals)
+createSidebarButton(5, "Teleport", "T", tabTeleport)
+createSidebarButton(6, "Skins", "S", tabSkins)
+createSidebarButton(7, "Ajustes", "A", tabConfig)
 
 local function sectionLabel(parent, order, text)
 	local l = Instance.new("TextLabel")
@@ -1036,6 +934,9 @@ createToggle(tabCombat, 8, "Extender cabeza", function()
 	return settings.hitboxEnabled
 end, function(v)
 	settings.hitboxEnabled = v
+	if not v then
+		-- restore happens in loop via flag
+	end
 end)
 createSlider(tabCombat, 9, "Tamano hitbox", 2, 20, function()
 	return settings.hitboxSize
@@ -1399,10 +1300,15 @@ local function createESP2D(player)
 end
 
 local function hideESP(draw)
-	draw.box.Visible = false
-	draw.name.Visible = false
-	draw.info.Visible = false
-	if draw.line then
+	if draw.kind == "draw" then
+		draw.box.Visible = false
+		draw.name.Visible = false
+		draw.info.Visible = false
+		draw.line.Visible = false
+	else
+		draw.box.Visible = false
+		draw.name.Visible = false
+		draw.info.Visible = false
 		draw.line.Visible = false
 	end
 end
