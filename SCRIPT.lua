@@ -530,153 +530,59 @@ bind(UserInputService.InputChanged:Connect(function(input)
 	end
 end))
 
-local BASE_W, BASE_H = 560, 400
-local uiScaleValue = 1
-local minimized = false
-
 local mainFrame = Instance.new("Frame")
-mainFrame.Name = "Main"
-mainFrame.Size = UDim2.new(0, BASE_W, 0, BASE_H)
-mainFrame.Position = UDim2.new(0.5, -BASE_W / 2, 0.5, -BASE_H / 2)
+mainFrame.Size = UDim2.new(0, 560, 0, 400)
+mainFrame.Position = UDim2.new(0.5, -280, 0.5, -200)
 mainFrame.BackgroundColor3 = COL.surface
 mainFrame.BorderSizePixel = 0
-mainFrame.ClipsDescendants = true
 mainFrame.Parent = gui
-corner(mainFrame, 14)
+corner(mainFrame, 16)
 stroke(mainFrame, COL.border, 1)
 
-local uiScale = Instance.new("UIScale")
-uiScale.Scale = 1
-uiScale.Parent = mainFrame
-
 local topBar = Instance.new("Frame")
-topBar.Name = "TopBar"
 topBar.Size = UDim2.new(1, 0, 0, 42)
-topBar.BackgroundColor3 = COL.elevated
+topBar.BackgroundColor3 = COL.surface
 topBar.BorderSizePixel = 0
-topBar.ZIndex = 5
 topBar.Parent = mainFrame
-
-local topBarLine = Instance.new("Frame")
-topBarLine.BackgroundColor3 = COL.border
-topBarLine.BorderSizePixel = 0
-topBarLine.Position = UDim2.new(0, 0, 1, -1)
-topBarLine.Size = UDim2.new(1, 0, 0, 1)
-topBarLine.ZIndex = 6
-topBarLine.Parent = topBar
+corner(topBar, 16)
 
 local titleText = Instance.new("TextLabel")
 titleText.BackgroundTransparency = 1
 titleText.Position = UDim2.new(0, 14, 0, 0)
-titleText.Size = UDim2.new(0, 200, 1, 0)
+titleText.Size = UDim2.new(0, 280, 1, 0)
 titleText.Font = Enum.Font.GothamBold
-titleText.Text = "SOVICH  v4.0"
+titleText.Text = "SOVICH    v4.0"
 titleText.TextColor3 = COL.fg
 titleText.TextSize = 13
 titleText.TextXAlignment = Enum.TextXAlignment.Left
-titleText.ZIndex = 6
 titleText.Parent = topBar
 
 local liveTag = Instance.new("TextLabel")
 liveTag.BackgroundTransparency = 1
 liveTag.AnchorPoint = Vector2.new(1, 0.5)
-liveTag.Position = UDim2.new(1, -150, 0.5, 0)
-liveTag.Size = UDim2.new(0, 36, 0, 16)
+liveTag.Position = UDim2.new(1, -78, 0.5, 0)
+liveTag.Size = UDim2.new(0, 40, 0, 16)
 liveTag.Font = Enum.Font.GothamMedium
 liveTag.Text = "LIVE"
 liveTag.TextColor3 = COL.ok
 liveTag.TextSize = 10
-liveTag.ZIndex = 6
 liveTag.Parent = topBar
 
-local blockDrag = false
-local function makeTopBtn(text, offsetX)
-	local b = Instance.new("TextButton")
-	b.AnchorPoint = Vector2.new(1, 0.5)
-	b.Position = UDim2.new(1, offsetX, 0.5, 0)
-	b.Size = UDim2.new(0, 28, 0, 28)
-	b.BackgroundColor3 = COL.bg
-	b.Text = text
-	b.TextColor3 = COL.muted
-	b.Font = Enum.Font.GothamBold
-	b.TextSize = 14
-	b.AutoButtonColor = false
-	b.ZIndex = 6
-	b.Parent = topBar
-	corner(b, 6)
-	stroke(b, COL.border, 1)
-	b.MouseButton1Down:Connect(function()
-		blockDrag = true
-	end)
-	b.MouseButton1Up:Connect(function()
-		blockDrag = false
-	end)
-	return b
-end
-
-local closeBtn = makeTopBtn("×", -8)
-local minBtn = makeTopBtn("–", -40)
-local scaleUpBtn = makeTopBtn("+", -72)
-local scaleDownBtn = makeTopBtn("−", -104)
-
-local function applyWindowSize()
-	if minimized then
-		mainFrame.Size = UDim2.new(0, BASE_W, 0, 42)
-	else
-		mainFrame.Size = UDim2.new(0, BASE_W, 0, BASE_H)
-	end
-	uiScale.Scale = uiScaleValue
-end
-
-local bodyFrame = Instance.new("Frame")
-bodyFrame.Name = "Body"
-bodyFrame.Position = UDim2.new(0, 0, 0, 42)
-bodyFrame.Size = UDim2.new(1, 0, 1, -42)
-bodyFrame.BackgroundTransparency = 1
-bodyFrame.BorderSizePixel = 0
-bodyFrame.ClipsDescendants = true
-bodyFrame.Parent = mainFrame
-
-local sidebar = Instance.new("Frame")
-sidebar.Name = "Sidebar"
-sidebar.Position = UDim2.new(0, 0, 0, 0)
-sidebar.Size = UDim2.new(0, 56, 1, 0)
-sidebar.BackgroundColor3 = COL.bg
-sidebar.BorderSizePixel = 0
-sidebar.Parent = bodyFrame
-
-local sideLine = Instance.new("Frame")
-sideLine.BackgroundColor3 = COL.border
-sideLine.BorderSizePixel = 0
-sideLine.Position = UDim2.new(1, -1, 0, 0)
-sideLine.Size = UDim2.new(0, 1, 1, 0)
-sideLine.Parent = sidebar
-
-local sideList = Instance.new("UIListLayout")
-sideList.Padding = UDim.new(0, 6)
-sideList.HorizontalAlignment = Enum.HorizontalAlignment.Center
-sideList.SortOrder = Enum.SortOrder.LayoutOrder
-sideList.Parent = sidebar
-
-local sidePad = Instance.new("UIPadding")
-sidePad.PaddingTop = UDim.new(0, 10)
-sidePad.PaddingBottom = UDim.new(0, 10)
-sidePad.Parent = sidebar
-
-local pagesContainer = Instance.new("Frame")
-pagesContainer.Name = "Pages"
-pagesContainer.Position = UDim2.new(0, 56, 0, 0)
-pagesContainer.Size = UDim2.new(1, -56, 1, 0)
-pagesContainer.BackgroundColor3 = COL.surface
-pagesContainer.BorderSizePixel = 0
-pagesContainer.ClipsDescendants = true
-pagesContainer.Parent = bodyFrame
+local closeBtn = Instance.new("TextButton")
+closeBtn.AnchorPoint = Vector2.new(1, 0.5)
+closeBtn.Position = UDim2.new(1, -10, 0.5, 0)
+closeBtn.Size = UDim2.new(0, 28, 0, 28)
+closeBtn.BackgroundColor3 = COL.elevated
+closeBtn.Text = "x"
+closeBtn.TextColor3 = COL.muted
+closeBtn.Font = Enum.Font.Gotham
+closeBtn.TextSize = 14
+closeBtn.AutoButtonColor = false
+closeBtn.Parent = topBar
+corner(closeBtn, 6)
 
 local draggingMain, dragStartMain, startPosMain = false, nil, nil
 bind(topBar.InputBegan:Connect(function(input)
-	if blockDrag then
-		return
-	end
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 		draggingMain = true
 		dragStartMain = input.Position
@@ -692,7 +598,6 @@ end))
 bind(UserInputService.InputEnded:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 		draggingMain = false
-		blockDrag = false
 		if draggingBtn then
 			draggingBtn = false
 			if not btnMoved then
@@ -706,24 +611,31 @@ closeBtn.MouseButton1Click:Connect(function()
 	mainFrame.Visible = false
 end)
 
-minBtn.MouseButton1Click:Connect(function()
-	minimized = not minimized
-	bodyFrame.Visible = not minimized
-	minBtn.Text = minimized and "□" or "–"
-	applyWindowSize()
-end)
+local sidebar = Instance.new("Frame")
+sidebar.Position = UDim2.new(0, 0, 0, 42)
+sidebar.Size = UDim2.new(0, 52, 1, -42)
+sidebar.BackgroundColor3 = COL.surface
+sidebar.BorderSizePixel = 0
+sidebar.Parent = mainFrame
+local sideLine = Instance.new("Frame")
+sideLine.BackgroundColor3 = COL.border
+sideLine.BorderSizePixel = 0
+sideLine.Position = UDim2.new(1, -1, 0, 0)
+sideLine.Size = UDim2.new(0, 1, 1, 0)
+sideLine.Parent = sidebar
+local sideList = Instance.new("UIListLayout")
+sideList.Padding = UDim.new(0, 4)
+sideList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+sideList.Parent = sidebar
+local sidePad = Instance.new("UIPadding")
+sidePad.PaddingTop = UDim.new(0, 8)
+sidePad.Parent = sidebar
 
-scaleUpBtn.MouseButton1Click:Connect(function()
-	uiScaleValue = math.clamp(uiScaleValue + 0.1, 0.7, 1.6)
-	applyWindowSize()
-	notify(string.format("Escala: %d%%", math.floor(uiScaleValue * 100 + 0.5)))
-end)
-
-scaleDownBtn.MouseButton1Click:Connect(function()
-	uiScaleValue = math.clamp(uiScaleValue - 0.1, 0.7, 1.6)
-	applyWindowSize()
-	notify(string.format("Escala: %d%%", math.floor(uiScaleValue * 100 + 0.5)))
-end)
+local pagesContainer = Instance.new("Frame")
+pagesContainer.Position = UDim2.new(0, 52, 0, 42)
+pagesContainer.Size = UDim2.new(1, -52, 1, -42)
+pagesContainer.BackgroundTransparency = 1
+pagesContainer.Parent = mainFrame
 
 local tabs, currentTab, tabButtons = {}, nil, {}
 
@@ -753,34 +665,26 @@ local function switchTab(name)
 	end
 	currentTab = name
 	for n, btn in pairs(tabButtons) do
-		local on = n == name
-		btn.TextColor3 = on and COL.fg or COL.subtle
-		btn.BackgroundColor3 = on and COL.elevated or COL.bg
+		btn.TextColor3 = n == name and COL.fg or COL.subtle
+		btn.BackgroundColor3 = n == name and COL.elevated or COL.surface
 	end
 end
 
 local function createSidebarButton(order, name, glyph, associated)
 	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0, 40, 0, 40)
-	btn.BackgroundColor3 = COL.bg
+	btn.Size = UDim2.new(0, 36, 0, 36)
+	btn.BackgroundColor3 = COL.surface
 	btn.Text = glyph
 	btn.TextColor3 = COL.subtle
 	btn.Font = Enum.Font.GothamBold
-	btn.TextSize = 13
+	btn.TextSize = 12
 	btn.LayoutOrder = order
 	btn.AutoButtonColor = false
 	btn.Parent = sidebar
 	corner(btn, 8)
-	stroke(btn, COL.border, 1)
 	tabs[name] = associated
 	tabButtons[name] = btn
 	btn.MouseButton1Click:Connect(function()
-		if minimized then
-			minimized = false
-			bodyFrame.Visible = true
-			minBtn.Text = "–"
-			applyWindowSize()
-		end
 		switchTab(name)
 	end)
 	if not currentTab then
