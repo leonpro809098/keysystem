@@ -933,6 +933,9 @@ createToggle(tabCombat, 8, "Extender cabeza", function()
 	return settings.hitboxEnabled
 end, function(v)
 	settings.hitboxEnabled = v
+	if not v then
+		-- restore happens in loop via flag
+	end
 end)
 createSlider(tabCombat, 9, "Tamano hitbox", 2, 20, function()
 	return settings.hitboxSize
@@ -1296,10 +1299,15 @@ local function createESP2D(player)
 end
 
 local function hideESP(draw)
-	draw.box.Visible = false
-	draw.name.Visible = false
-	draw.info.Visible = false
-	if draw.line then
+	if draw.kind == "draw" then
+		draw.box.Visible = false
+		draw.name.Visible = false
+		draw.info.Visible = false
+		draw.line.Visible = false
+	else
+		draw.box.Visible = false
+		draw.name.Visible = false
+		draw.info.Visible = false
 		draw.line.Visible = false
 	end
 end
@@ -1699,3 +1707,4 @@ end
 
 gui.Destroying:Connect(unload)
 notify("SOVICH v4 listo  ·  Insert para el menu")
+
