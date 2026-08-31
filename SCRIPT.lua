@@ -43,7 +43,7 @@ end
 print(ProtectionConfig.HubName .. " Loaded Successfully!") 
 
 -- =================================================================
--- SOVICH v4.0 - FULL SCRIPT CORREGIDO (UI FIX + UISCALE + CHEATS)
+-- SOVICH v4.0 - SCRIPT COMPLETO (UI + COMBAT + VISUALS + SKINS + TP)
 -- =================================================================
 
 local Players = game:GetService("Players")
@@ -51,27 +51,64 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 local Lighting = game:GetService("Lighting")
+local Workspace = game:GetService("Workspace")
 
 local localPlayer = Players.LocalPlayer
+local camera = Workspace.CurrentCamera
 local mouse = localPlayer:GetMouse()
 
--- Configuración global
+-- Referencia a las configuraciones globales de armas (si existe en el juego)
+local WeaponConfig = getgenv().WeaponConfig or _G.WeaponConfig
+
+-- -----------------------------------------------------------------
+-- CONFIGURACIÓN GLOBAL
+-- -----------------------------------------------------------------
 local settings = {
+    -- Player
     walkSpeed = 16,
     speedEnabled = false,
     jumpPower = 50,
     superJumpEnabled = false,
     infJumpEnabled = false,
     noclipEnabled = false,
-    fullbrightEnabled = false,
-    espEnabled = false,
-    espColor = Color3.fromRGB(255, 50, 50),
-    hitboxSize = 2,
+    -- Combat
+    aimbotEnabled = false,
+    aimSmooth = 0.2,
+    aimFov = 150,
+    aimPart = "Head",
     hitboxEnabled = false,
+    hitboxSize = 2,
+    spinbotEnabled = false,
+    spinSpeed = 20,
+    -- Visuals
+    espEnabled = false,
+    espBoxes = true,
+    espTracers = false,
+    espNames = true,
+    espColor = Color3.fromRGB(0, 230, 120),
+    fullbrightEnabled = false,
+    -- Settings
     uiScale = 1.0
 }
 
--- Paleta de colores
+local connections = {}
+local espObjects = {}
+
+-- Limpieza previa si ya existe la interfaz
+if CoreGui:FindFirstChild("SovichUI") then
+    CoreGui.SovichUI:Destroy()
+end
+
+-- Check de Soporte para Drawing API
+local hasDrawing = pcall(function()
+    local d = Drawing.new("Line")
+    d.Visible = false
+    d:Remove()
+end)
+
+-- -----------------------------------------------------------------
+-- INTERFAZ GRÁFICA PRINCIPAL
+-- -----------------------------------------------------------------
 local COL = {
     bg = Color3.fromRGB(18, 20, 24),
     panel = Color3.fromRGB(25, 27, 32),
@@ -83,22 +120,15 @@ local COL = {
     btnActive = Color3.fromRGB(45, 50, 60)
 }
 
--- Limpieza previa
-if CoreGui:FindFirstChild("SovichUI") then
-    CoreGui.SovichUI:Destroy()
-end
-
--- ScreenGui Principal
 local gui = Instance.new("ScreenGui")
 gui.Name = "SovichUI"
 gui.ResetOnSpawn = false
 gui.Parent = CoreGui
 
--- Marco Principal
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 520, 0, 330)
-MainFrame.Position = UDim2.new(0.5, -260, 0.5, -165)
+MainFrame.Size = UDim2.new(0, 540, 0, 350)
+MainFrame.Position = UDim2.new(0.5, -270, 0.5, -175)
 MainFrame.BackgroundColor3 = COL.bg
 MainFrame.BorderSizePixel = 0
 MainFrame.ClipsDescendants = true
@@ -108,13 +138,24 @@ local mainCorner = Instance.new("UICorner")
 mainCorner.CornerRadius = UDim.new(0, 8)
 mainCorner.Parent = MainFrame
 
--- CONTROLADOR DE ESCALA DE INTERFAZ (UIScale)
 local uiScaleObj = Instance.new("UIScale")
 uiScaleObj.Scale = settings.uiScale
 uiScaleObj.Parent = MainFrame
 
--- Sistema de Arrastre (Drag)
-local dragging, dragInput, dragStart, startPos
+-- Círculo de FOV para Aimbot
+local fovCircle
+if hasDrawing then
+    fovCircle = Drawing.new("Circle")
+    fovCircle.Thickness = 1
+    fovCircle.NumSides = 30
+    fovCircle.Radius = settings.aimFov
+    fovCircle.Color = COL.accent
+    fovCircle.Visible = false
+    fovCircle.Filled = false
+end
+
+-- Drag System
+local dragging, dragStart, startPos
 MainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true
@@ -137,7 +178,7 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- Barra Superior (Header)
+-- TopBar
 local TopBar = Instance.new("Frame")
 TopBar.Size = UDim2.new(1, 0, 0, 32)
 TopBar.BackgroundColor3 = COL.panel
@@ -151,7 +192,7 @@ Title.Font = Enum.Font.GothamBold
 Title.TextSize = 13
 Title.TextColor3 = COL.text
 Title.Position = UDim2.new(0, 12, 0, 0)
-Title.Size = UDim2.new(0, 120, 1, 0)
+Title.Size = UDim2.new(0, 150, 1, 0)
 Title.BackgroundTransparency = 1
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = TopBar
@@ -165,11 +206,8 @@ CloseBtn.Size = UDim2.new(0, 32, 1, 0)
 CloseBtn.Position = UDim2.new(1, -32, 0, 0)
 CloseBtn.BackgroundTransparency = 1
 CloseBtn.Parent = TopBar
-CloseBtn.MouseButton1Click:Connect(function()
-    gui:Destroy()
-end)
 
--- BARRA LATERAL CORREGIDA (Integrada adentro del panel)
+-- SideBar
 local SideBar = Instance.new("Frame")
 SideBar.Name = "SideBar"
 SideBar.Size = UDim2.new(0, 40, 1, -38)
@@ -186,22 +224,18 @@ local sideList = Instance.new("UIListLayout")
 sideList.SortOrder = Enum.SortOrder.LayoutOrder
 sideList.Padding = UDim.new(0, 4)
 sideList.HorizontalAlignment = Enum.HorizontalAlignment.Center
-sideList.VerticalAlignment = Enum.VerticalAlignment.Top
 sideList.Parent = SideBar
 
 local sidePadding = Instance.new("UIPadding")
 sidePadding.PaddingTop = UDim.new(0, 6)
 sidePadding.Parent = SideBar
 
--- Contenedor de Pestañas
 local ContentContainer = Instance.new("Frame")
-ContentContainer.Name = "ContentContainer"
 ContentContainer.Size = UDim2.new(1, -58, 1, -44)
 ContentContainer.Position = UDim2.new(0, 52, 0, 38)
 ContentContainer.BackgroundTransparency = 1
 ContentContainer.Parent = MainFrame
 
--- Administrador de Pestañas
 local tabs = {}
 local tabButtons = {}
 
@@ -222,7 +256,6 @@ local function createTab(id)
     
     tabs[id] = tabFrame
     
-    -- Botón en el Sidebar
     local btn = Instance.new("TextButton")
     btn.Name = "Btn_" .. id
     btn.Size = UDim2.new(0, 30, 0, 30)
@@ -239,9 +272,7 @@ local function createTab(id)
     btnCorner.Parent = btn
     
     btn.MouseButton1Click:Connect(function()
-        for tId, frame in pairs(tabs) do
-            frame.Visible = (tId == id)
-        end
+        for tId, frame in pairs(tabs) do frame.Visible = (tId == id) end
         for tId, b in pairs(tabButtons) do
             b.BackgroundColor3 = (tId == id) and COL.btnActive or COL.btn
             b.TextColor3 = (tId == id) and COL.accent or COL.muted
@@ -252,7 +283,6 @@ local function createTab(id)
     return tabFrame
 end
 
--- Crear Pestañas: P (Player), C (Combat), M (Visuals), V (Skins), T (Teleport), S (Settings), A (About)
 local tabP = createTab("P")
 local tabC = createTab("C")
 local tabM = createTab("M")
@@ -265,20 +295,15 @@ tabP.Visible = true
 tabButtons["P"].BackgroundColor3 = COL.btnActive
 tabButtons["P"].TextColor3 = COL.accent
 
--- =================================================================
--- COMPONENTES DE INTERFAZ (Toggles & Sliders)
--- =================================================================
-
+-- -----------------------------------------------------------------
+-- COMPONENTES UI (Toggles, Sliders, Buttons)
+-- -----------------------------------------------------------------
 local function createToggle(parent, text, default, callback)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, -6, 0, 36)
     frame.BackgroundColor3 = COL.panel
-    frame.BorderSizePixel = 0
     frame.Parent = parent
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 6)
-    corner.Parent = frame
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 6)
     
     local label = Instance.new("TextLabel")
     label.Text = text
@@ -296,23 +321,15 @@ local function createToggle(parent, text, default, callback)
     switch.Size = UDim2.new(0, 36, 0, 18)
     switch.Position = UDim2.new(1, -44, 0.5, -9)
     switch.BackgroundColor3 = default and COL.accent or COL.btn
-    switch.BorderSizePixel = 0
     switch.Parent = frame
-    
-    local swCorner = Instance.new("UICorner")
-    swCorner.CornerRadius = UDim.new(1, 0)
-    swCorner.Parent = switch
+    Instance.new("UICorner", switch).CornerRadius = UDim.new(1, 0)
     
     local dot = Instance.new("Frame")
     dot.Size = UDim2.new(0, 14, 0, 14)
     dot.Position = default and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
     dot.BackgroundColor3 = COL.text
-    dot.BorderSizePixel = 0
     dot.Parent = switch
-    
-    local dCorner = Instance.new("UICorner")
-    dCorner.CornerRadius = UDim.new(1, 0)
-    dCorner.Parent = dot
+    Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
     
     local state = default
     switch.MouseButton1Click:Connect(function()
@@ -325,21 +342,17 @@ end
 
 local function createSlider(parent, text, min, max, default, callback)
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, -6, 0, 48)
+    frame.Size = UDim2.new(1, -6, 0, 46)
     frame.BackgroundColor3 = COL.panel
-    frame.BorderSizePixel = 0
     frame.Parent = parent
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 6)
-    corner.Parent = frame
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 6)
     
     local label = Instance.new("TextLabel")
     label.Text = text
     label.Font = Enum.Font.GothamMedium
     label.TextSize = 12
     label.TextColor3 = COL.text
-    label.Position = UDim2.new(0, 10, 0, 6)
+    label.Position = UDim2.new(0, 10, 0, 4)
     label.Size = UDim2.new(0.6, 0, 0, 18)
     label.BackgroundTransparency = 1
     label.TextXAlignment = Enum.TextXAlignment.Left
@@ -350,7 +363,7 @@ local function createSlider(parent, text, min, max, default, callback)
     valLabel.Font = Enum.Font.GothamBold
     valLabel.TextSize = 12
     valLabel.TextColor3 = COL.accent
-    valLabel.Position = UDim2.new(1, -60, 0, 6)
+    valLabel.Position = UDim2.new(1, -60, 0, 4)
     valLabel.Size = UDim2.new(0, 50, 0, 18)
     valLabel.BackgroundTransparency = 1
     valLabel.TextXAlignment = Enum.TextXAlignment.Right
@@ -358,32 +371,24 @@ local function createSlider(parent, text, min, max, default, callback)
     
     local track = Instance.new("Frame")
     track.Size = UDim2.new(1, -20, 0, 6)
-    track.Position = UDim2.new(0, 10, 0, 32)
+    track.Position = UDim2.new(0, 10, 0, 30)
     track.BackgroundColor3 = COL.btn
-    track.BorderSizePixel = 0
     track.Parent = frame
-    
-    local tCorner = Instance.new("UICorner")
-    tCorner.CornerRadius = UDim.new(1, 0)
-    tCorner.Parent = track
+    Instance.new("UICorner", track).CornerRadius = UDim.new(1, 0)
     
     local fill = Instance.new("Frame")
     local initPct = math.clamp((default - min) / (max - min), 0, 1)
     fill.Size = UDim2.new(initPct, 0, 1, 0)
     fill.BackgroundColor3 = COL.accent
-    fill.BorderSizePixel = 0
     fill.Parent = track
-    
-    local fCorner = Instance.new("UICorner")
-    fCorner.CornerRadius = UDim.new(1, 0)
-    fCorner.Parent = fill
+    Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
     
     local sliding = false
     local function update(input)
         local pos = math.clamp((input.Position.X - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
         fill.Size = UDim2.new(pos, 0, 1, 0)
         local val = math.floor(min + (max - min) * pos)
-        if min < 2 and max <= 2 then -- Ajuste de precisión decimal si min/max son flotantes
+        if min < 2 and max <= 2 then
             val = math.floor((min + (max - min) * pos) * 100) / 100
         end
         valLabel.Text = tostring(val)
@@ -397,101 +402,300 @@ local function createSlider(parent, text, min, max, default, callback)
         end
     end)
     track.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            sliding = false
-        end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then sliding = false end
     end)
     UserInputService.InputChanged:Connect(function(input)
-        if sliding and input.UserInputType == Enum.UserInputType.MouseMovement then
-            update(input)
-        end
+        if sliding and input.UserInputType == Enum.UserInputType.MouseMovement then update(input) end
     end)
 end
 
--- =================================================================
--- LLENADO DE PESTAÑAS Y FUNCIONALIDADES
--- =================================================================
+local function createButton(parent, text, callback)
+    local btn = Instance.new("TextButton")
+    btn.Text = text
+    btn.Font = Enum.Font.GothamMedium
+    btn.TextSize = 12
+    btn.TextColor3 = COL.text
+    btn.Size = UDim2.new(1, -6, 0, 32)
+    btn.BackgroundColor3 = COL.btn
+    btn.Parent = parent
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+    btn.MouseButton1Click:Connect(callback)
+end
 
--- Pestaña P (Player / Movimiento)
+-- -----------------------------------------------------------------
+-- CONTENIDO DE PESTAÑAS
+-- -----------------------------------------------------------------
+
+-- P: Player
 createToggle(tabP, "Activar Speed", settings.speedEnabled, function(v) settings.speedEnabled = v end)
-createSlider(tabP, "Velocidad WalkSpeed", 16, 150, settings.walkSpeed, function(v) settings.walkSpeed = v end)
+createSlider(tabP, "WalkSpeed", 16, 150, settings.walkSpeed, function(v) settings.walkSpeed = v end)
 createToggle(tabP, "Super Jump", settings.superJumpEnabled, function(v) settings.superJumpEnabled = v end)
-createSlider(tabP, "Potencia Salto", 50, 300, settings.jumpPower, function(v) settings.jumpPower = v end)
+createSlider(tabP, "JumpPower", 50, 300, settings.jumpPower, function(v) settings.jumpPower = v end)
 createToggle(tabP, "Salto Infinito", settings.infJumpEnabled, function(v) settings.infJumpEnabled = v end)
 createToggle(tabP, "Noclip", settings.noclipEnabled, function(v) settings.noclipEnabled = v end)
 
--- Pestaña C (Combat)
-createToggle(tabC, "Expandir Hitbox Cabezas", settings.hitboxEnabled, function(v) settings.hitboxEnabled = v end)
+-- C: Combat
+createToggle(tabC, "Activar Aimbot", settings.aimbotEnabled, function(v)
+    settings.aimbotEnabled = v
+    if fovCircle then fovCircle.Visible = v end
+end)
+createSlider(tabC, "Suavizado Aimbot", 0.05, 1, settings.aimSmooth, function(v) settings.aimSmooth = v end)
+createSlider(tabC, "Radio FOV", 50, 400, settings.aimFov, function(v)
+    settings.aimFov = v
+    if fovCircle then fovCircle.Radius = v end
+end)
+createToggle(tabC, "Hitbox Expander", settings.hitboxEnabled, function(v) settings.hitboxEnabled = v end)
 createSlider(tabC, "Tamaño Hitbox", 2, 20, settings.hitboxSize, function(v) settings.hitboxSize = v end)
+createToggle(tabC, "Spinbot", settings.spinbotEnabled, function(v) settings.spinbotEnabled = v end)
 
--- Pestaña M (Visuals)
-createToggle(tabM, "ESP 2D / Nombres", settings.espEnabled, function(v) settings.espEnabled = v end)
-createToggle(tabM, "Fullbright (Luz Total)", settings.fullbrightEnabled, function(v)
+-- M: Visuals
+createToggle(tabM, "Activar ESP 2D", settings.espEnabled, function(v) settings.espEnabled = v end)
+createToggle(tabM, "ESP Cajas (Boxes)", settings.espBoxes, function(v) settings.espBoxes = v end)
+createToggle(tabM, "ESP Líneas (Tracers)", settings.espTracers, function(v) settings.espTracers = v end)
+createToggle(tabM, "Fullbright", settings.fullbrightEnabled, function(v)
     settings.fullbrightEnabled = v
-    if not v then
-        Lighting.Ambient = Color3.fromRGB(127, 127, 127)
-    end
+    if not v then Lighting.Ambient = Color3.fromRGB(127, 127, 127) end
 end)
 
--- Pestaña S (Settings - INCLUYE SLIDER DE ESCALA DE INTERFAZ)
+-- V: Skins System (Parche seguro para mantener el disparo)
+local function safeApplySkin(targetKey, sourceSkinKey)
+    if WeaponConfig and WeaponConfig[targetKey] and WeaponConfig[sourceSkinKey] then
+        local target = WeaponConfig[targetKey]
+        local source = WeaponConfig[sourceSkinKey]
+        
+        -- Copia únicamente las propiedades cosméticas para evitar romper el script de disparo
+        if source.FirstPersonModel then target.FirstPersonModel = source.FirstPersonModel end
+        if source.ThirdPersonModel then target.ThirdPersonModel = source.ThirdPersonModel end
+        if source.Textures then target.Textures = source.Textures end
+        if source.MeshId then target.MeshId = source.MeshId end
+    end
+end
+
+createButton(tabV, "Aplicar Skin Gold / Premium", function()
+    safeApplySkin("AK47", "AK47_Gold")
+    safeApplySkin("M4A1", "M4A1_Hyperbeast")
+end)
+
+-- T: Teleport System
+local playerListFrame = Instance.new("Frame")
+playerListFrame.Size = UDim2.new(1, -6, 0, 180)
+playerListFrame.BackgroundColor3 = COL.panel
+playerListFrame.Parent = tabT
+Instance.new("UICorner", playerListFrame).CornerRadius = UDim.new(0, 6)
+
+local tpScroll = Instance.new("ScrollingFrame")
+tpScroll.Size = UDim2.new(1, -10, 1, -10)
+tpScroll.Position = UDim2.new(0, 5, 0, 5)
+tpScroll.BackgroundTransparency = 1
+tpScroll.Parent = playerListFrame
+local tpList = Instance.new("UIListLayout")
+tpList.Padding = UDim.new(0, 4)
+tpList.Parent = tpScroll
+
+local function refreshTPList()
+    for _, child in ipairs(tpScroll:GetChildren()) do
+        if child:IsA("TextButton") then child:Destroy() end
+    end
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= localPlayer then
+            local btn = Instance.new("TextButton")
+            btn.Text = "  " .. p.DisplayName .. " (@" .. p.Name .. ")"
+            btn.Font = Enum.Font.GothamMedium
+            btn.TextSize = 11
+            btn.TextColor3 = COL.text
+            btn.TextXAlignment = Enum.TextXAlignment.Left
+            btn.Size = UDim2.new(1, 0, 0, 26)
+            btn.BackgroundColor3 = COL.btn
+            btn.Parent = tpScroll
+            Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+            
+            btn.MouseButton1Click:Connect(function()
+                if p.Character and p.Character:FindFirstChild("HumanoidRootPart") and localPlayer.Character then
+                    localPlayer.Character:MoveTo(p.Character.HumanoidRootPart.Position)
+                end
+            end)
+        end
+    end
+end
+createButton(tabT, "Actualizar Lista Jugadores", refreshTPList)
+refreshTPList()
+
+-- S: Settings
 createSlider(tabS, "Escala de Interfaz", 0.5, 1.5, settings.uiScale, function(v)
     settings.uiScale = v
     uiScaleObj.Scale = v
 end)
 
--- Pestaña A (About)
-local infoTxt = Instance.new("TextLabel")
-infoTxt.Size = UDim2.new(1, -10, 0, 80)
-infoTxt.BackgroundColor3 = COL.panel
-infoTxt.TextColor3 = COL.muted
-infoTxt.Text = "SOVICH Menu UI v4.0\nOptimizaciones visuales y parches integrados.\nEscala dinámica soportada."
-infoTxt.Font = Enum.Font.GothamMedium
-infoTxt.TextSize = 12
-infoTxt.Parent = tabA
-local aCorner = Instance.new("UICorner")
-aCorner.CornerRadius = UDim.new(0, 6)
-aCorner.Parent = infoTxt
+local function unload()
+    for _, conn in pairs(connections) do conn:Disconnect() end
+    if fovCircle then fovCircle:Remove() end
+    for _, obj in pairs(espObjects) do
+        if obj.box then obj.box:Remove() end
+        if obj.line then obj.line:Remove() end
+        if obj.holder then obj.holder:Destroy() end
+    end
+    gui:Destroy()
+end
 
--- =================================================================
--- BUCLES DE EJECUCIÓN (CHEATS)
--- =================================================================
+createButton(tabS, "Desactivar y Limpiar Script (Unload)", unload)
+CloseBtn.MouseButton1Click:Connect(unload)
 
--- Movimiento y Noclip
-RunService.Stepped:Connect(function()
-    if localPlayer.Character and localPlayer.Character:FindFirstChildOfClass("Humanoid") then
-        local hum = localPlayer.Character:FindFirstChildOfClass("Humanoid")
+-- A: About
+local aboutText = Instance.new("TextLabel")
+aboutText.Size = UDim2.new(1, -6, 0, 100)
+aboutText.BackgroundColor3 = COL.panel
+aboutText.TextColor3 = COL.muted
+aboutText.Text = "SOVICH v4.0 Full Version\nSistemas incluidos: Movement, Aimbot, ESP, Skins Safe-Patch, Teleport y UIScale Manager."
+aboutText.Font = Enum.Font.GothamMedium
+aboutText.TextSize = 12
+aboutText.Parent = tabA
+Instance.new("UICorner", aboutText).CornerRadius = UDim.new(0, 6)
+
+-- -----------------------------------------------------------------
+-- SISTEMAS LÓGICOS DE EJECUCIÓN (LOOPS & CHEATS)
+-- -----------------------------------------------------------------
+
+-- ESP Manager
+local function createESP(player)
+    if espObjects[player] then return end
+    if hasDrawing then
+        local box = Drawing.new("Square")
+        box.Thickness = 1
+        box.Filled = false
+        box.Color = settings.espColor
         
-        if settings.speedEnabled then
-            hum.WalkSpeed = settings.walkSpeed
-        end
+        local line = Drawing.new("Line")
+        line.Thickness = 1
+        line.Color = settings.espColor
         
-        if settings.superJumpEnabled then
-            hum.JumpPower = settings.jumpPower
-        end
+        espObjects[player] = { box = box, line = line }
+    else
+        local holder = Instance.new("Folder")
+        holder.Name = "ESP_" .. player.Name
+        holder.Parent = gui
         
-        if settings.noclipEnabled then
-            for _, part in ipairs(localPlayer.Character:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = false
+        local box = Instance.new("Frame")
+        box.BackgroundTransparency = 1
+        box.Visible = false
+        box.Parent = holder
+        local stroke = Instance.new("UIStroke")
+        stroke.Color = settings.espColor
+        stroke.Thickness = 1
+        stroke.Parent = box
+        
+        espObjects[player] = { holder = holder, boxGui = box }
+    end
+end
+
+local function removeESP(player)
+    if espObjects[player] then
+        local data = espObjects[player]
+        if data.box then data.box:Remove() end
+        if data.line then data.line:Remove() end
+        if data.holder then data.holder:Destroy() end
+        espObjects[player] = nil
+    end
+end
+
+for _, p in ipairs(Players:GetPlayers()) do
+    if p ~= localPlayer then createESP(p) end
+end
+table.insert(connections, Players.PlayerAdded:Connect(createESP))
+table.insert(connections, Players.PlayerRemoving:Connect(removeESP))
+
+-- Main Loop (RenderStepped)
+table.insert(connections, RunService.RenderStepped:Connect(function()
+    -- FOV Position
+    if fovCircle then
+        fovCircle.Position = UserInputService:GetMouseLocation()
+    end
+    
+    -- Aimbot Target & Lock
+    if settings.aimbotEnabled and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
+        local targetPart = nil
+        local shortestDist = settings.aimFov
+        local mousePos = UserInputService:GetMouseLocation()
+        
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= localPlayer and p.Character and p.Character:FindFirstChild(settings.aimPart) then
+                local part = p.Character[settings.aimPart]
+                local screenPos, onScreen = camera:WorldToViewportPoint(part.Position)
+                if onScreen then
+                    local dist = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
+                    if dist < shortestDist then
+                        shortestDist = dist
+                        targetPart = part
+                    end
                 end
             end
         end
+        
+        if targetPart then
+            local targetCamPos = camera:WorldToViewportPoint(targetPart.Position)
+            local currentCamPos = camera:WorldToViewportPoint(camera.CFrame.Position + camera.CFrame.LookVector)
+            camera.CFrame = CFrame.new(camera.CFrame.Position, targetPart.Position)
+        end
     end
     
-    if settings.fullbrightEnabled then
-        Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+    -- ESP Rendering
+    for player, data in pairs(espObjects) do
+        if settings.espEnabled and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local hrp = player.Character.HumanoidRootPart
+            local pos, onScreen = camera:WorldToViewportPoint(hrp.Position)
+            
+            if onScreen then
+                local sizeY = (camera:WorldToViewportPoint(hrp.Position + Vector3.new(0, 3, 0)).Y - camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 3, 0)).Y)
+                local sizeX = sizeY * 0.6
+                
+                if data.box then
+                    data.box.Size = Vector2.new(math.abs(sizeX), math.abs(sizeY))
+                    data.box.Position = Vector2.new(pos.X - (sizeX / 2), pos.Y - (sizeY / 2))
+                    data.box.Visible = settings.espBoxes
+                    
+                    if settings.espTracers then
+                        data.line.From = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
+                        data.line.To = Vector2.new(pos.X, pos.Y)
+                        data.line.Visible = true
+                    else
+                        data.line.Visible = false
+                    end
+                elseif data.boxGui then
+                    data.boxGui.Size = UDim2.new(0, math.abs(sizeX), 0, math.abs(sizeY))
+                    data.boxGui.Position = UDim2.new(0, pos.X - (sizeX / 2), 0, pos.Y - (sizeY / 2))
+                    data.boxGui.Visible = settings.espBoxes
+                end
+            else
+                if data.box then data.box.Visible = false data.line.Visible = false end
+                if data.boxGui then data.boxGui.Visible = false end
+            end
+        else
+            if data.box then data.box.Visible = false data.line.Visible = false end
+            if data.boxGui then data.boxGui.Visible = false end
+        end
     end
-end)
+end))
 
--- Salto Infinito
-UserInputService.JumpRequest:Connect(function()
-    if settings.infJumpEnabled and localPlayer.Character and localPlayer.Character:FindFirstChildOfClass("Humanoid") then
-        localPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
+-- Physical Loops (Stepped)
+table.insert(connections, RunService.Stepped:Connect(function()
+    local char = localPlayer.Character
+    if char and char:FindFirstChildOfClass("Humanoid") then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if settings.speedEnabled then hum.WalkSpeed = settings.walkSpeed end
+        if settings.superJumpEnabled then hum.JumpPower = settings.jumpPower end
+        if settings.noclipEnabled then
+            for _, part in ipairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then part.CanCollide = false end
+            end
+        end
+        if settings.spinbotEnabled and char:FindFirstChild("HumanoidRootPart") then
+            char.HumanoidRootPart.CFrame = char.HumanoidRootPart.CFrame * CFrame.Angles(0, math.rad(settings.spinSpeed), 0)
+        end
     end
-end)
+    if settings.fullbrightEnabled then Lighting.Ambient = Color3.fromRGB(255, 255, 255) end
+end))
 
--- Hitbox Expander Seguro
-RunService.RenderStepped:Connect(function()
+-- Hitbox Expander Loop
+table.insert(connections, RunService.RenderStepped:Connect(function()
     if settings.hitboxEnabled then
         for _, p in ipairs(Players:GetPlayers()) do
             if p ~= localPlayer and p.Character and p.Character:FindFirstChild("Head") then
@@ -502,4 +706,11 @@ RunService.RenderStepped:Connect(function()
             end
         end
     end
-end)
+end))
+
+-- Infinite Jump
+table.insert(connections, UserInputService.JumpRequest:Connect(function()
+    if settings.infJumpEnabled and localPlayer.Character and localPlayer.Character:FindFirstChildOfClass("Humanoid") then
+        localPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
+    end
+end))
