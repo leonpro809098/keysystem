@@ -531,8 +531,6 @@ bind(UserInputService.InputChanged:Connect(function(input)
 end))
 
 local BASE_W, BASE_H = 560, 400
-local TOP_H = 42
-local SIDE_W = 52
 local uiScaleValue = 1
 local minimized = false
 
@@ -553,10 +551,10 @@ uiScale.Parent = mainFrame
 
 local topBar = Instance.new("Frame")
 topBar.Name = "TopBar"
-topBar.Size = UDim2.new(1, 0, 0, TOP_H)
+topBar.Size = UDim2.new(1, 0, 0, 42)
 topBar.BackgroundColor3 = COL.elevated
 topBar.BorderSizePixel = 0
-topBar.ZIndex = 10
+topBar.ZIndex = 5
 topBar.Parent = mainFrame
 
 local topBarLine = Instance.new("Frame")
@@ -564,7 +562,7 @@ topBarLine.BackgroundColor3 = COL.border
 topBarLine.BorderSizePixel = 0
 topBarLine.Position = UDim2.new(0, 0, 1, -1)
 topBarLine.Size = UDim2.new(1, 0, 0, 1)
-topBarLine.ZIndex = 11
+topBarLine.ZIndex = 6
 topBarLine.Parent = topBar
 
 local titleText = Instance.new("TextLabel")
@@ -576,7 +574,7 @@ titleText.Text = "SOVICH  v4.0"
 titleText.TextColor3 = COL.fg
 titleText.TextSize = 13
 titleText.TextXAlignment = Enum.TextXAlignment.Left
-titleText.ZIndex = 11
+titleText.ZIndex = 6
 titleText.Parent = topBar
 
 local liveTag = Instance.new("TextLabel")
@@ -588,7 +586,7 @@ liveTag.Font = Enum.Font.GothamMedium
 liveTag.Text = "LIVE"
 liveTag.TextColor3 = COL.ok
 liveTag.TextSize = 10
-liveTag.ZIndex = 11
+liveTag.ZIndex = 6
 liveTag.Parent = topBar
 
 local blockDrag = false
@@ -603,7 +601,7 @@ local function makeTopBtn(text, offsetX)
 	b.Font = Enum.Font.GothamBold
 	b.TextSize = 14
 	b.AutoButtonColor = false
-	b.ZIndex = 11
+	b.ZIndex = 6
 	b.Parent = topBar
 	corner(b, 6)
 	stroke(b, COL.border, 1)
@@ -623,7 +621,7 @@ local scaleDownBtn = makeTopBtn("−", -104)
 
 local function applyWindowSize()
 	if minimized then
-		mainFrame.Size = UDim2.new(0, BASE_W, 0, TOP_H)
+		mainFrame.Size = UDim2.new(0, BASE_W, 0, 42)
 	else
 		mainFrame.Size = UDim2.new(0, BASE_W, 0, BASE_H)
 	end
@@ -632,8 +630,8 @@ end
 
 local bodyFrame = Instance.new("Frame")
 bodyFrame.Name = "Body"
-bodyFrame.Position = UDim2.new(0, 0, 0, TOP_H)
-bodyFrame.Size = UDim2.new(1, 0, 1, -TOP_H)
+bodyFrame.Position = UDim2.new(0, 0, 0, 42)
+bodyFrame.Size = UDim2.new(1, 0, 1, -42)
 bodyFrame.BackgroundTransparency = 1
 bodyFrame.BorderSizePixel = 0
 bodyFrame.ClipsDescendants = true
@@ -642,10 +640,9 @@ bodyFrame.Parent = mainFrame
 local sidebar = Instance.new("Frame")
 sidebar.Name = "Sidebar"
 sidebar.Position = UDim2.new(0, 0, 0, 0)
-sidebar.Size = UDim2.new(0, SIDE_W, 1, 0)
-sidebar.BackgroundColor3 = Color3.fromRGB(12, 14, 18)
+sidebar.Size = UDim2.new(0, 56, 1, 0)
+sidebar.BackgroundColor3 = COL.bg
 sidebar.BorderSizePixel = 0
-sidebar.ZIndex = 5
 sidebar.Parent = bodyFrame
 
 local sideLine = Instance.new("Frame")
@@ -653,13 +650,23 @@ sideLine.BackgroundColor3 = COL.border
 sideLine.BorderSizePixel = 0
 sideLine.Position = UDim2.new(1, -1, 0, 0)
 sideLine.Size = UDim2.new(0, 1, 1, 0)
-sideLine.ZIndex = 6
 sideLine.Parent = sidebar
+
+local sideList = Instance.new("UIListLayout")
+sideList.Padding = UDim.new(0, 6)
+sideList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+sideList.SortOrder = Enum.SortOrder.LayoutOrder
+sideList.Parent = sidebar
+
+local sidePad = Instance.new("UIPadding")
+sidePad.PaddingTop = UDim.new(0, 10)
+sidePad.PaddingBottom = UDim.new(0, 10)
+sidePad.Parent = sidebar
 
 local pagesContainer = Instance.new("Frame")
 pagesContainer.Name = "Pages"
-pagesContainer.Position = UDim2.new(0, SIDE_W, 0, 0)
-pagesContainer.Size = UDim2.new(1, -SIDE_W, 1, 0)
+pagesContainer.Position = UDim2.new(0, 56, 0, 0)
+pagesContainer.Size = UDim2.new(1, -56, 1, 0)
 pagesContainer.BackgroundColor3 = COL.surface
 pagesContainer.BorderSizePixel = 0
 pagesContainer.ClipsDescendants = true
@@ -747,23 +754,21 @@ local function switchTab(name)
 	currentTab = name
 	for n, btn in pairs(tabButtons) do
 		local on = n == name
-		btn.TextColor3 = on and Color3.fromRGB(12, 14, 18) or Color3.fromRGB(210, 214, 220)
-		btn.BackgroundColor3 = on and Color3.fromRGB(220, 225, 235) or Color3.fromRGB(22, 26, 32)
+		btn.TextColor3 = on and COL.fg or COL.subtle
+		btn.BackgroundColor3 = on and COL.elevated or COL.bg
 	end
 end
 
 local function createSidebarButton(order, name, glyph, associated)
 	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0, 38, 0, 38)
-	btn.Position = UDim2.new(0.5, -19, 0, 10 + (order - 1) * 46)
-	btn.AnchorPoint = Vector2.new(0, 0)
-	btn.BackgroundColor3 = Color3.fromRGB(22, 26, 32)
+	btn.Size = UDim2.new(0, 40, 0, 40)
+	btn.BackgroundColor3 = COL.bg
 	btn.Text = glyph
-	btn.TextColor3 = Color3.fromRGB(210, 214, 220)
+	btn.TextColor3 = COL.subtle
 	btn.Font = Enum.Font.GothamBold
-	btn.TextSize = 14
+	btn.TextSize = 13
+	btn.LayoutOrder = order
 	btn.AutoButtonColor = false
-	btn.ZIndex = 7
 	btn.Parent = sidebar
 	corner(btn, 8)
 	stroke(btn, COL.border, 1)
@@ -778,6 +783,9 @@ local function createSidebarButton(order, name, glyph, associated)
 		end
 		switchTab(name)
 	end)
+	if not currentTab then
+		switchTab(name)
+	end
 	return btn
 end
 
@@ -796,7 +804,6 @@ createSidebarButton(4, "Visuales", "V", tabVisuals)
 createSidebarButton(5, "Teleport", "T", tabTeleport)
 createSidebarButton(6, "Skins", "S", tabSkins)
 createSidebarButton(7, "Ajustes", "A", tabConfig)
-switchTab("Principal")
 
 local function sectionLabel(parent, order, text)
 	local l = Instance.new("TextLabel")
