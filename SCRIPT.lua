@@ -530,7 +530,8 @@ bind(UserInputService.InputChanged:Connect(function(input)
 	end
 end))
 
-local BASE_W, BASE_H = 560, 400
+local BASE_W, BASE_H = 580, 450
+local HEADER_H = 80
 local uiScaleValue = 1
 local minimized = false
 
@@ -549,32 +550,39 @@ local uiScale = Instance.new("UIScale")
 uiScale.Scale = 1
 uiScale.Parent = mainFrame
 
+local header = Instance.new("Frame")
+header.Name = "Header"
+header.Size = UDim2.new(1, 0, 0, HEADER_H)
+header.BackgroundColor3 = Color3.fromRGB(18, 20, 26)
+header.BorderSizePixel = 0
+header.ZIndex = 20
+header.Parent = mainFrame
+
+local headerBottom = Instance.new("Frame")
+headerBottom.BackgroundColor3 = COL.border
+headerBottom.BorderSizePixel = 0
+headerBottom.Position = UDim2.new(0, 0, 1, -1)
+headerBottom.Size = UDim2.new(1, 0, 0, 1)
+headerBottom.ZIndex = 21
+headerBottom.Parent = header
+
 local topBar = Instance.new("Frame")
 topBar.Name = "TopBar"
-topBar.Size = UDim2.new(1, 0, 0, 42)
-topBar.BackgroundColor3 = COL.elevated
-topBar.BorderSizePixel = 0
-topBar.ZIndex = 5
-topBar.Parent = mainFrame
-
-local topBarLine = Instance.new("Frame")
-topBarLine.BackgroundColor3 = COL.border
-topBarLine.BorderSizePixel = 0
-topBarLine.Position = UDim2.new(0, 0, 1, -1)
-topBarLine.Size = UDim2.new(1, 0, 0, 1)
-topBarLine.ZIndex = 6
-topBarLine.Parent = topBar
+topBar.Size = UDim2.new(1, 0, 0, 40)
+topBar.BackgroundTransparency = 1
+topBar.ZIndex = 21
+topBar.Parent = header
 
 local titleText = Instance.new("TextLabel")
 titleText.BackgroundTransparency = 1
 titleText.Position = UDim2.new(0, 14, 0, 0)
-titleText.Size = UDim2.new(0, 200, 1, 0)
+titleText.Size = UDim2.new(0, 180, 1, 0)
 titleText.Font = Enum.Font.GothamBold
 titleText.Text = "SOVICH  v4.0"
-titleText.TextColor3 = COL.fg
+titleText.TextColor3 = Color3.fromRGB(240, 242, 245)
 titleText.TextSize = 13
 titleText.TextXAlignment = Enum.TextXAlignment.Left
-titleText.ZIndex = 6
+titleText.ZIndex = 22
 titleText.Parent = topBar
 
 local liveTag = Instance.new("TextLabel")
@@ -586,7 +594,7 @@ liveTag.Font = Enum.Font.GothamMedium
 liveTag.Text = "LIVE"
 liveTag.TextColor3 = COL.ok
 liveTag.TextSize = 10
-liveTag.ZIndex = 6
+liveTag.ZIndex = 22
 liveTag.Parent = topBar
 
 local blockDrag = false
@@ -595,13 +603,13 @@ local function makeTopBtn(text, offsetX)
 	b.AnchorPoint = Vector2.new(1, 0.5)
 	b.Position = UDim2.new(1, offsetX, 0.5, 0)
 	b.Size = UDim2.new(0, 28, 0, 28)
-	b.BackgroundColor3 = COL.bg
+	b.BackgroundColor3 = Color3.fromRGB(10, 12, 16)
 	b.Text = text
-	b.TextColor3 = COL.muted
+	b.TextColor3 = Color3.fromRGB(180, 186, 196)
 	b.Font = Enum.Font.GothamBold
 	b.TextSize = 14
 	b.AutoButtonColor = false
-	b.ZIndex = 6
+	b.ZIndex = 22
 	b.Parent = topBar
 	corner(b, 6)
 	stroke(b, COL.border, 1)
@@ -619,59 +627,40 @@ local minBtn = makeTopBtn("–", -40)
 local scaleUpBtn = makeTopBtn("+", -72)
 local scaleDownBtn = makeTopBtn("−", -104)
 
+local tabBar = Instance.new("Frame")
+tabBar.Name = "TabBar"
+tabBar.Position = UDim2.new(0, 0, 0, 40)
+tabBar.Size = UDim2.new(1, 0, 0, 40)
+tabBar.BackgroundTransparency = 1
+tabBar.ZIndex = 21
+tabBar.Parent = header
+
 local function applyWindowSize()
 	if minimized then
-		mainFrame.Size = UDim2.new(0, BASE_W, 0, 42)
+		mainFrame.Size = UDim2.new(0, BASE_W, 0, 40)
+		tabBar.Visible = false
+		header.Size = UDim2.new(1, 0, 0, 40)
 	else
 		mainFrame.Size = UDim2.new(0, BASE_W, 0, BASE_H)
+		tabBar.Visible = true
+		header.Size = UDim2.new(1, 0, 0, HEADER_H)
 	end
 	uiScale.Scale = uiScaleValue
 end
 
-local TAB_H = 36
-
 local bodyFrame = Instance.new("Frame")
 bodyFrame.Name = "Body"
-bodyFrame.Position = UDim2.new(0, 0, 0, 42)
-bodyFrame.Size = UDim2.new(1, 0, 1, -42)
-bodyFrame.BackgroundTransparency = 1
+bodyFrame.Position = UDim2.new(0, 0, 0, HEADER_H)
+bodyFrame.Size = UDim2.new(1, 0, 1, -HEADER_H)
+bodyFrame.BackgroundColor3 = COL.surface
 bodyFrame.BorderSizePixel = 0
 bodyFrame.ClipsDescendants = true
 bodyFrame.Parent = mainFrame
 
-local tabBar = Instance.new("Frame")
-tabBar.Name = "TabBar"
-tabBar.Position = UDim2.new(0, 0, 0, 0)
-tabBar.Size = UDim2.new(1, 0, 0, TAB_H)
-tabBar.BackgroundColor3 = COL.bg
-tabBar.BorderSizePixel = 0
-tabBar.Parent = bodyFrame
-
-local tabBarLine = Instance.new("Frame")
-tabBarLine.BackgroundColor3 = COL.border
-tabBarLine.BorderSizePixel = 0
-tabBarLine.Position = UDim2.new(0, 0, 1, -1)
-tabBarLine.Size = UDim2.new(1, 0, 0, 1)
-tabBarLine.Parent = tabBar
-
-local tabList = Instance.new("UIListLayout")
-tabList.FillDirection = Enum.FillDirection.Horizontal
-tabList.HorizontalAlignment = Enum.HorizontalAlignment.Left
-tabList.VerticalAlignment = Enum.VerticalAlignment.Center
-tabList.Padding = UDim.new(0, 4)
-tabList.SortOrder = Enum.SortOrder.LayoutOrder
-tabList.Parent = tabBar
-
-local tabPad = Instance.new("UIPadding")
-tabPad.PaddingLeft = UDim.new(0, 8)
-tabPad.PaddingRight = UDim.new(0, 8)
-tabPad.Parent = tabBar
-
 local pagesContainer = Instance.new("Frame")
 pagesContainer.Name = "Pages"
-pagesContainer.Position = UDim2.new(0, 0, 0, TAB_H)
-pagesContainer.Size = UDim2.new(1, 0, 1, -TAB_H)
-pagesContainer.BackgroundColor3 = COL.surface
+pagesContainer.Size = UDim2.new(1, 0, 1, 0)
+pagesContainer.BackgroundTransparency = 1
 pagesContainer.BorderSizePixel = 0
 pagesContainer.ClipsDescendants = true
 pagesContainer.Parent = bodyFrame
@@ -758,28 +747,34 @@ local function switchTab(name)
 	currentTab = name
 	for n, btn in pairs(tabButtons) do
 		local on = n == name
-		btn.TextColor3 = on and COL.bg or COL.muted
-		btn.BackgroundColor3 = on and COL.accent or COL.elevated
-		local st = btn:FindFirstChildOfClass("UIStroke")
-		if st then
-			st.Color = on and COL.accent or COL.border
-		end
+		btn.TextColor3 = on and Color3.fromRGB(10, 12, 16) or Color3.fromRGB(230, 234, 240)
+		btn.BackgroundColor3 = on and Color3.fromRGB(220, 225, 235) or Color3.fromRGB(28, 32, 40)
 	end
 end
 
+local TAB_LABELS = {
+	{ "Principal", "Inicio" },
+	{ "Combate", "Combate" },
+	{ "Movimiento", "Mover" },
+	{ "Visuales", "Visual" },
+	{ "Teleport", "TP" },
+	{ "Skins", "Skins" },
+	{ "Ajustes", "Ajustes" },
+}
+
 local function createTabButton(order, name, label, associated)
 	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0, 68, 0, 26)
-	btn.BackgroundColor3 = COL.elevated
+	btn.Size = UDim2.new(0, 74, 0, 28)
+	btn.Position = UDim2.new(0, 10 + (order - 1) * 79, 0.5, -14)
+	btn.BackgroundColor3 = Color3.fromRGB(28, 32, 40)
 	btn.Text = label
-	btn.TextColor3 = COL.muted
+	btn.TextColor3 = Color3.fromRGB(230, 234, 240)
 	btn.Font = Enum.Font.GothamBold
 	btn.TextSize = 11
-	btn.LayoutOrder = order
 	btn.AutoButtonColor = false
+	btn.ZIndex = 22
 	btn.Parent = tabBar
-	corner(btn, 6)
-	stroke(btn, COL.border, 1)
+	corner(btn, 7)
 	tabs[name] = associated
 	tabButtons[name] = btn
 	btn.MouseButton1Click:Connect(function()
@@ -791,9 +786,6 @@ local function createTabButton(order, name, label, associated)
 		end
 		switchTab(name)
 	end)
-	if not currentTab then
-		switchTab(name)
-	end
 	return btn
 end
 
@@ -805,13 +797,20 @@ local tabTeleport = createTabContent("Teleport")
 local tabSkins = createTabContent("Skins")
 local tabConfig = createTabContent("Ajustes")
 
-createTabButton(1, "Principal", "Inicio", tabMain)
-createTabButton(2, "Combate", "Combate", tabCombat)
-createTabButton(3, "Movimiento", "Mover", tabMovement)
-createTabButton(4, "Visuales", "Visual", tabVisuals)
-createTabButton(5, "Teleport", "TP", tabTeleport)
-createTabButton(6, "Skins", "Skins", tabSkins)
-createTabButton(7, "Ajustes", "Ajustes", tabConfig)
+local tabContents = {
+	Principal = tabMain,
+	Combate = tabCombat,
+	Movimiento = tabMovement,
+	Visuales = tabVisuals,
+	Teleport = tabTeleport,
+	Skins = tabSkins,
+	Ajustes = tabConfig,
+}
+
+for i, info in ipairs(TAB_LABELS) do
+	createTabButton(i, info[1], info[2], tabContents[info[1]])
+end
+switchTab("Principal")
 
 local function sectionLabel(parent, order, text)
 	local l = Instance.new("TextLabel")
