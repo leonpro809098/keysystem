@@ -628,6 +628,8 @@ local function applyWindowSize()
 	uiScale.Scale = uiScaleValue
 end
 
+local TAB_H = 36
+
 local bodyFrame = Instance.new("Frame")
 bodyFrame.Name = "Body"
 bodyFrame.Position = UDim2.new(0, 0, 0, 42)
@@ -637,36 +639,38 @@ bodyFrame.BorderSizePixel = 0
 bodyFrame.ClipsDescendants = true
 bodyFrame.Parent = mainFrame
 
-local sidebar = Instance.new("Frame")
-sidebar.Name = "Sidebar"
-sidebar.Position = UDim2.new(0, 0, 0, 0)
-sidebar.Size = UDim2.new(0, 56, 1, 0)
-sidebar.BackgroundColor3 = COL.bg
-sidebar.BorderSizePixel = 0
-sidebar.Parent = bodyFrame
+local tabBar = Instance.new("Frame")
+tabBar.Name = "TabBar"
+tabBar.Position = UDim2.new(0, 0, 0, 0)
+tabBar.Size = UDim2.new(1, 0, 0, TAB_H)
+tabBar.BackgroundColor3 = COL.bg
+tabBar.BorderSizePixel = 0
+tabBar.Parent = bodyFrame
 
-local sideLine = Instance.new("Frame")
-sideLine.BackgroundColor3 = COL.border
-sideLine.BorderSizePixel = 0
-sideLine.Position = UDim2.new(1, -1, 0, 0)
-sideLine.Size = UDim2.new(0, 1, 1, 0)
-sideLine.Parent = sidebar
+local tabBarLine = Instance.new("Frame")
+tabBarLine.BackgroundColor3 = COL.border
+tabBarLine.BorderSizePixel = 0
+tabBarLine.Position = UDim2.new(0, 0, 1, -1)
+tabBarLine.Size = UDim2.new(1, 0, 0, 1)
+tabBarLine.Parent = tabBar
 
-local sideList = Instance.new("UIListLayout")
-sideList.Padding = UDim.new(0, 6)
-sideList.HorizontalAlignment = Enum.HorizontalAlignment.Center
-sideList.SortOrder = Enum.SortOrder.LayoutOrder
-sideList.Parent = sidebar
+local tabList = Instance.new("UIListLayout")
+tabList.FillDirection = Enum.FillDirection.Horizontal
+tabList.HorizontalAlignment = Enum.HorizontalAlignment.Left
+tabList.VerticalAlignment = Enum.VerticalAlignment.Center
+tabList.Padding = UDim.new(0, 4)
+tabList.SortOrder = Enum.SortOrder.LayoutOrder
+tabList.Parent = tabBar
 
-local sidePad = Instance.new("UIPadding")
-sidePad.PaddingTop = UDim.new(0, 10)
-sidePad.PaddingBottom = UDim.new(0, 10)
-sidePad.Parent = sidebar
+local tabPad = Instance.new("UIPadding")
+tabPad.PaddingLeft = UDim.new(0, 8)
+tabPad.PaddingRight = UDim.new(0, 8)
+tabPad.Parent = tabBar
 
 local pagesContainer = Instance.new("Frame")
 pagesContainer.Name = "Pages"
-pagesContainer.Position = UDim2.new(0, 56, 0, 0)
-pagesContainer.Size = UDim2.new(1, -56, 1, 0)
+pagesContainer.Position = UDim2.new(0, 0, 0, TAB_H)
+pagesContainer.Size = UDim2.new(1, 0, 1, -TAB_H)
 pagesContainer.BackgroundColor3 = COL.surface
 pagesContainer.BorderSizePixel = 0
 pagesContainer.ClipsDescendants = true
@@ -754,23 +758,27 @@ local function switchTab(name)
 	currentTab = name
 	for n, btn in pairs(tabButtons) do
 		local on = n == name
-		btn.TextColor3 = on and COL.fg or COL.subtle
-		btn.BackgroundColor3 = on and COL.elevated or COL.bg
+		btn.TextColor3 = on and COL.bg or COL.muted
+		btn.BackgroundColor3 = on and COL.accent or COL.elevated
+		local st = btn:FindFirstChildOfClass("UIStroke")
+		if st then
+			st.Color = on and COL.accent or COL.border
+		end
 	end
 end
 
-local function createSidebarButton(order, name, glyph, associated)
+local function createTabButton(order, name, label, associated)
 	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0, 40, 0, 40)
-	btn.BackgroundColor3 = COL.bg
-	btn.Text = glyph
-	btn.TextColor3 = COL.subtle
+	btn.Size = UDim2.new(0, 68, 0, 26)
+	btn.BackgroundColor3 = COL.elevated
+	btn.Text = label
+	btn.TextColor3 = COL.muted
 	btn.Font = Enum.Font.GothamBold
-	btn.TextSize = 13
+	btn.TextSize = 11
 	btn.LayoutOrder = order
 	btn.AutoButtonColor = false
-	btn.Parent = sidebar
-	corner(btn, 8)
+	btn.Parent = tabBar
+	corner(btn, 6)
 	stroke(btn, COL.border, 1)
 	tabs[name] = associated
 	tabButtons[name] = btn
@@ -797,13 +805,13 @@ local tabTeleport = createTabContent("Teleport")
 local tabSkins = createTabContent("Skins")
 local tabConfig = createTabContent("Ajustes")
 
-createSidebarButton(1, "Principal", "P", tabMain)
-createSidebarButton(2, "Combate", "C", tabCombat)
-createSidebarButton(3, "Movimiento", "M", tabMovement)
-createSidebarButton(4, "Visuales", "V", tabVisuals)
-createSidebarButton(5, "Teleport", "T", tabTeleport)
-createSidebarButton(6, "Skins", "S", tabSkins)
-createSidebarButton(7, "Ajustes", "A", tabConfig)
+createTabButton(1, "Principal", "Inicio", tabMain)
+createTabButton(2, "Combate", "Combate", tabCombat)
+createTabButton(3, "Movimiento", "Mover", tabMovement)
+createTabButton(4, "Visuales", "Visual", tabVisuals)
+createTabButton(5, "Teleport", "TP", tabTeleport)
+createTabButton(6, "Skins", "Skins", tabSkins)
+createTabButton(7, "Ajustes", "Ajustes", tabConfig)
 
 local function sectionLabel(parent, order, text)
 	local l = Instance.new("TextLabel")
