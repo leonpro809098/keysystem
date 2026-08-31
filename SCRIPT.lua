@@ -535,6 +535,7 @@ mainFrame.Size = UDim2.new(0, 540, 0, 360)
 mainFrame.Position = UDim2.new(0.5, -270, 0.5, -180)
 mainFrame.BackgroundColor3 = COL.surface
 mainFrame.BorderSizePixel = 0
+mainFrame.ClipsDescendants = true
 mainFrame.Parent = gui
 corner(mainFrame, 14)
 stroke(mainFrame, COL.border, 1)
@@ -616,6 +617,7 @@ sidebar.Position = UDim2.new(0, 0, 0, 42)
 sidebar.Size = UDim2.new(0, 60, 1, -42)
 sidebar.BackgroundColor3 = COL.surface
 sidebar.BorderSizePixel = 0
+sidebar.ClipsDescendants = true
 sidebar.Parent = mainFrame
 local sideLine = Instance.new("Frame")
 sideLine.BackgroundColor3 = COL.border
