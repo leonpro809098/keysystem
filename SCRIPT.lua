@@ -120,14 +120,12 @@ local lightingBackup = {
 	FogEnd = Lighting.FogEnd,
 }
 
-local WeaponConfig = nil
-pcall(function()
-	local cfg = RS:FindFirstChild("Config")
-	local wc = cfg and cfg:FindFirstChild("WeaponConfig")
-	if wc then
-		WeaponConfig = require(wc)
-	end
+local okWeapon, WeaponConfig = pcall(function()
+	return require(RS:WaitForChild("Config", 2):WaitForChild("WeaponConfig", 2))
 end)
+if not okWeapon then
+	WeaponConfig = nil
+end
 
 local knifeBases = {
 	"ButterflyKnife", "ClassKnife", "CordKnife", "FlipKnife", "GutKnife",
@@ -532,9 +530,8 @@ bind(UserInputService.InputChanged:Connect(function(input)
 	end
 end))
 
-local BASE_W, BASE_H = 560, 400
-local TOP_H = 42
-local SIDE_W = 52
+local BASE_W, BASE_H = 580, 450
+local HEADER_H = 80
 local uiScaleValue = 1
 local minimized = false
 
@@ -553,32 +550,39 @@ local uiScale = Instance.new("UIScale")
 uiScale.Scale = 1
 uiScale.Parent = mainFrame
 
+local header = Instance.new("Frame")
+header.Name = "Header"
+header.Size = UDim2.new(1, 0, 0, HEADER_H)
+header.BackgroundColor3 = Color3.fromRGB(18, 20, 26)
+header.BorderSizePixel = 0
+header.ZIndex = 20
+header.Parent = mainFrame
+
+local headerBottom = Instance.new("Frame")
+headerBottom.BackgroundColor3 = COL.border
+headerBottom.BorderSizePixel = 0
+headerBottom.Position = UDim2.new(0, 0, 1, -1)
+headerBottom.Size = UDim2.new(1, 0, 0, 1)
+headerBottom.ZIndex = 21
+headerBottom.Parent = header
+
 local topBar = Instance.new("Frame")
 topBar.Name = "TopBar"
-topBar.Size = UDim2.new(1, 0, 0, TOP_H)
-topBar.BackgroundColor3 = COL.elevated
-topBar.BorderSizePixel = 0
-topBar.ZIndex = 10
-topBar.Parent = mainFrame
-
-local topBarLine = Instance.new("Frame")
-topBarLine.BackgroundColor3 = COL.border
-topBarLine.BorderSizePixel = 0
-topBarLine.Position = UDim2.new(0, 0, 1, -1)
-topBarLine.Size = UDim2.new(1, 0, 0, 1)
-topBarLine.ZIndex = 11
-topBarLine.Parent = topBar
+topBar.Size = UDim2.new(1, 0, 0, 40)
+topBar.BackgroundTransparency = 1
+topBar.ZIndex = 21
+topBar.Parent = header
 
 local titleText = Instance.new("TextLabel")
 titleText.BackgroundTransparency = 1
 titleText.Position = UDim2.new(0, 14, 0, 0)
-titleText.Size = UDim2.new(0, 200, 1, 0)
+titleText.Size = UDim2.new(0, 180, 1, 0)
 titleText.Font = Enum.Font.GothamBold
 titleText.Text = "SOVICH  v4.0"
-titleText.TextColor3 = COL.fg
+titleText.TextColor3 = Color3.fromRGB(240, 242, 245)
 titleText.TextSize = 13
 titleText.TextXAlignment = Enum.TextXAlignment.Left
-titleText.ZIndex = 11
+titleText.ZIndex = 22
 titleText.Parent = topBar
 
 local liveTag = Instance.new("TextLabel")
@@ -590,7 +594,7 @@ liveTag.Font = Enum.Font.GothamMedium
 liveTag.Text = "LIVE"
 liveTag.TextColor3 = COL.ok
 liveTag.TextSize = 10
-liveTag.ZIndex = 11
+liveTag.ZIndex = 22
 liveTag.Parent = topBar
 
 local blockDrag = false
@@ -599,13 +603,13 @@ local function makeTopBtn(text, offsetX)
 	b.AnchorPoint = Vector2.new(1, 0.5)
 	b.Position = UDim2.new(1, offsetX, 0.5, 0)
 	b.Size = UDim2.new(0, 28, 0, 28)
-	b.BackgroundColor3 = COL.bg
+	b.BackgroundColor3 = Color3.fromRGB(10, 12, 16)
 	b.Text = text
-	b.TextColor3 = COL.muted
+	b.TextColor3 = Color3.fromRGB(180, 186, 196)
 	b.Font = Enum.Font.GothamBold
 	b.TextSize = 14
 	b.AutoButtonColor = false
-	b.ZIndex = 11
+	b.ZIndex = 22
 	b.Parent = topBar
 	corner(b, 6)
 	stroke(b, COL.border, 1)
@@ -623,46 +627,40 @@ local minBtn = makeTopBtn("–", -40)
 local scaleUpBtn = makeTopBtn("+", -72)
 local scaleDownBtn = makeTopBtn("−", -104)
 
+local tabBar = Instance.new("Frame")
+tabBar.Name = "TabBar"
+tabBar.Position = UDim2.new(0, 0, 0, 40)
+tabBar.Size = UDim2.new(1, 0, 0, 40)
+tabBar.BackgroundTransparency = 1
+tabBar.ZIndex = 21
+tabBar.Parent = header
+
 local function applyWindowSize()
 	if minimized then
-		mainFrame.Size = UDim2.new(0, BASE_W, 0, TOP_H)
+		mainFrame.Size = UDim2.new(0, BASE_W, 0, 40)
+		tabBar.Visible = false
+		header.Size = UDim2.new(1, 0, 0, 40)
 	else
 		mainFrame.Size = UDim2.new(0, BASE_W, 0, BASE_H)
+		tabBar.Visible = true
+		header.Size = UDim2.new(1, 0, 0, HEADER_H)
 	end
 	uiScale.Scale = uiScaleValue
 end
 
 local bodyFrame = Instance.new("Frame")
 bodyFrame.Name = "Body"
-bodyFrame.Position = UDim2.new(0, 0, 0, TOP_H)
-bodyFrame.Size = UDim2.new(1, 0, 1, -TOP_H)
-bodyFrame.BackgroundTransparency = 1
+bodyFrame.Position = UDim2.new(0, 0, 0, HEADER_H)
+bodyFrame.Size = UDim2.new(1, 0, 1, -HEADER_H)
+bodyFrame.BackgroundColor3 = COL.surface
 bodyFrame.BorderSizePixel = 0
 bodyFrame.ClipsDescendants = true
 bodyFrame.Parent = mainFrame
 
-local sidebar = Instance.new("Frame")
-sidebar.Name = "Sidebar"
-sidebar.Position = UDim2.new(0, 0, 0, 0)
-sidebar.Size = UDim2.new(0, SIDE_W, 1, 0)
-sidebar.BackgroundColor3 = Color3.fromRGB(12, 14, 18)
-sidebar.BorderSizePixel = 0
-sidebar.ZIndex = 5
-sidebar.Parent = bodyFrame
-
-local sideLine = Instance.new("Frame")
-sideLine.BackgroundColor3 = COL.border
-sideLine.BorderSizePixel = 0
-sideLine.Position = UDim2.new(1, -1, 0, 0)
-sideLine.Size = UDim2.new(0, 1, 1, 0)
-sideLine.ZIndex = 6
-sideLine.Parent = sidebar
-
 local pagesContainer = Instance.new("Frame")
 pagesContainer.Name = "Pages"
-pagesContainer.Position = UDim2.new(0, SIDE_W, 0, 0)
-pagesContainer.Size = UDim2.new(1, -SIDE_W, 1, 0)
-pagesContainer.BackgroundColor3 = COL.surface
+pagesContainer.Size = UDim2.new(1, 0, 1, 0)
+pagesContainer.BackgroundTransparency = 1
 pagesContainer.BorderSizePixel = 0
 pagesContainer.ClipsDescendants = true
 pagesContainer.Parent = bodyFrame
@@ -749,27 +747,34 @@ local function switchTab(name)
 	currentTab = name
 	for n, btn in pairs(tabButtons) do
 		local on = n == name
-		btn.TextColor3 = on and Color3.fromRGB(12, 14, 18) or Color3.fromRGB(210, 214, 220)
-		btn.BackgroundColor3 = on and Color3.fromRGB(220, 225, 235) or Color3.fromRGB(22, 26, 32)
+		btn.TextColor3 = on and Color3.fromRGB(10, 12, 16) or Color3.fromRGB(230, 234, 240)
+		btn.BackgroundColor3 = on and Color3.fromRGB(220, 225, 235) or Color3.fromRGB(28, 32, 40)
 	end
 end
 
-local function createSidebarButton(order, name, glyph, associated)
+local TAB_LABELS = {
+	{ "Principal", "Inicio" },
+	{ "Combate", "Combate" },
+	{ "Movimiento", "Mover" },
+	{ "Visuales", "Visual" },
+	{ "Teleport", "TP" },
+	{ "Skins", "Skins" },
+	{ "Ajustes", "Ajustes" },
+}
+
+local function createTabButton(order, name, label, associated)
 	local btn = Instance.new("TextButton")
-	btn.Name = "Tab_" .. name
-	btn.Size = UDim2.new(0, 38, 0, 38)
-	btn.Position = UDim2.new(0, 7, 0, 10 + (order - 1) * 46)
-	btn.BackgroundColor3 = Color3.fromRGB(22, 26, 32)
-	btn.Text = glyph
-	btn.TextColor3 = Color3.fromRGB(210, 214, 220)
+	btn.Size = UDim2.new(0, 74, 0, 28)
+	btn.Position = UDim2.new(0, 10 + (order - 1) * 79, 0.5, -14)
+	btn.BackgroundColor3 = Color3.fromRGB(28, 32, 40)
+	btn.Text = label
+	btn.TextColor3 = Color3.fromRGB(230, 234, 240)
 	btn.Font = Enum.Font.GothamBold
-	btn.TextSize = 14
+	btn.TextSize = 11
 	btn.AutoButtonColor = false
-	btn.ZIndex = 7
-	btn.Visible = true
-	btn.Parent = sidebar
-	corner(btn, 8)
-	stroke(btn, COL.border, 1)
+	btn.ZIndex = 22
+	btn.Parent = tabBar
+	corner(btn, 7)
 	tabs[name] = associated
 	tabButtons[name] = btn
 	btn.MouseButton1Click:Connect(function()
@@ -792,17 +797,20 @@ local tabTeleport = createTabContent("Teleport")
 local tabSkins = createTabContent("Skins")
 local tabConfig = createTabContent("Ajustes")
 
-createSidebarButton(1, "Principal", "P", tabMain)
-createSidebarButton(2, "Combate", "C", tabCombat)
-createSidebarButton(3, "Movimiento", "M", tabMovement)
-createSidebarButton(4, "Visuales", "V", tabVisuals)
-createSidebarButton(5, "Teleport", "T", tabTeleport)
-createSidebarButton(6, "Skins", "S", tabSkins)
-createSidebarButton(7, "Ajustes", "A", tabConfig)
+local tabContents = {
+	Principal = tabMain,
+	Combate = tabCombat,
+	Movimiento = tabMovement,
+	Visuales = tabVisuals,
+	Teleport = tabTeleport,
+	Skins = tabSkins,
+	Ajustes = tabConfig,
+}
+
+for i, info in ipairs(TAB_LABELS) do
+	createTabButton(i, info[1], info[2], tabContents[info[1]])
+end
 switchTab("Principal")
-mainFrame.Visible = true
-sidebar.Visible = true
-bodyFrame.Visible = true
 
 local function sectionLabel(parent, order, text)
 	local l = Instance.new("TextLabel")
@@ -1793,6 +1801,4 @@ local function unload()
 end
 
 gui.Destroying:Connect(unload)
-mainFrame.Visible = true
-notify("SOVICH v4 listo  ·  Insert / boton S")
-print("[SOVICH] Hub cargado OK")
+notify("SOVICH v4 listo  ·  Insert para el menu")
