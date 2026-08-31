@@ -120,12 +120,14 @@ local lightingBackup = {
 	FogEnd = Lighting.FogEnd,
 }
 
-local okWeapon, WeaponConfig = pcall(function()
-	return require(RS:WaitForChild("Config", 2):WaitForChild("WeaponConfig", 2))
+local WeaponConfig = nil
+pcall(function()
+	local cfg = RS:FindFirstChild("Config")
+	local wc = cfg and cfg:FindFirstChild("WeaponConfig")
+	if wc then
+		WeaponConfig = require(wc)
+	end
 end)
-if not okWeapon then
-	WeaponConfig = nil
-end
 
 local knifeBases = {
 	"ButterflyKnife", "ClassKnife", "CordKnife", "FlipKnife", "GutKnife",
@@ -754,9 +756,9 @@ end
 
 local function createSidebarButton(order, name, glyph, associated)
 	local btn = Instance.new("TextButton")
+	btn.Name = "Tab_" .. name
 	btn.Size = UDim2.new(0, 38, 0, 38)
-	btn.Position = UDim2.new(0.5, -19, 0, 10 + (order - 1) * 46)
-	btn.AnchorPoint = Vector2.new(0, 0)
+	btn.Position = UDim2.new(0, 7, 0, 10 + (order - 1) * 46)
 	btn.BackgroundColor3 = Color3.fromRGB(22, 26, 32)
 	btn.Text = glyph
 	btn.TextColor3 = Color3.fromRGB(210, 214, 220)
@@ -764,6 +766,7 @@ local function createSidebarButton(order, name, glyph, associated)
 	btn.TextSize = 14
 	btn.AutoButtonColor = false
 	btn.ZIndex = 7
+	btn.Visible = true
 	btn.Parent = sidebar
 	corner(btn, 8)
 	stroke(btn, COL.border, 1)
@@ -797,6 +800,9 @@ createSidebarButton(5, "Teleport", "T", tabTeleport)
 createSidebarButton(6, "Skins", "S", tabSkins)
 createSidebarButton(7, "Ajustes", "A", tabConfig)
 switchTab("Principal")
+mainFrame.Visible = true
+sidebar.Visible = true
+bodyFrame.Visible = true
 
 local function sectionLabel(parent, order, text)
 	local l = Instance.new("TextLabel")
@@ -1787,4 +1793,6 @@ local function unload()
 end
 
 gui.Destroying:Connect(unload)
-notify("SOVICH v4 listo  ·  Insert para el menu")
+mainFrame.Visible = true
+notify("SOVICH v4 listo  ·  Insert / boton S")
+print("[SOVICH] Hub cargado OK")
